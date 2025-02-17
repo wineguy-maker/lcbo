@@ -202,6 +202,10 @@ def refresh_data(store_id=None):
 def main():
     st.title("LCBO Wine Filter")
 
+    # Initialize session state for store
+    if 'selected_store' not in st.session_state:
+        st.session_state.selected_store = 'Select Store'
+    
     # Store Selector
     store_options = ['Select Store', 'Bradford', 'E. Gwillimbury', 'Upper Canada', 'Yonge & Eg']
     store_ids = {
@@ -210,12 +214,16 @@ def main():
         "Upper Canada": "226",
         "Yonge & Eg": "457"
     }
-    store = st.sidebar.selectbox("Store", options=store_options)
+    selected_store = st.sidebar.selectbox("Store", options=store_options)
 
-    # Refresh data when a store is selected
-    if store != 'Select Store':
-        store_id = store_ids.get(store)
-        data = refresh_data(store_id=store_id)  # Refresh and reload the data using the store_id
+    # Refresh data only if the store selection changes
+    if selected_store != st.session_state.selected_store:
+        st.session_state.selected_store = selected_store
+        if selected_store != 'Select Store':
+            store_id = store_ids.get(selected_store)
+            data = refresh_data(store_id=store_id)  # Refresh and reload the data using the store_id
+        else:
+            data = load_data("products.csv")  # Load current data from CSV
     else:
         data = load_data("products.csv")  # Load current data from CSV
 
@@ -260,28 +268,30 @@ def main():
     end_idx = start_idx + page_size
     page_data = filtered_data.iloc[start_idx:end_idx]
 
-    # Displaying Products with Detailed View
+    # Displaying Products with Detailed View in a Popup
     for idx, row in page_data.iterrows():
         st.markdown(f"### {row['title']}")
         st.markdown(f"**Price:** ${row.get('raw_ec_price', 'N/A')} | **Rating:** {row.get('raw_ec_rating', 'N/A')} | **Reviews:** {row.get('raw_avg_reviews', 'N/A')}")
         if pd.notna(row.get('raw_ec_thumbnails', None)) and row.get('raw_ec_thumbnails', 'N/A') != 'N/A':
             st.image(row['raw_ec_thumbnails'], width=150)
         if st.button("View Details", key=f"view_{idx}"):
-            view_detailed_product(row)
+            show_detailed_product_popup(row)
 
         st.markdown("---")
 
-def view_detailed_product(product):
-    st.write("### Detailed Product View")
-    if 'raw_ec_thumbnails' in product and pd.notna(product['raw_ec_thumbnails']):
-        st.image(product['raw_ec_thumbnails'], width=300)
-    st.markdown(f"**Title:** {product['title']}")
-    st.markdown(f"**URI:** {product['uri']}")
-    st.markdown(f"**Description:** {product['raw_ec_shortdesc']}")
-    st.markdown(f"**Price:** {product['raw_ec_price']}")
-    st.markdown(f"**Rating:** {product['raw_ec_rating']}")
-    st.markdown(f"**Reviews:** {product['raw_avg_reviews']}")
-    # Add more detailed product fields as needed
+def show_detailed_product_popup(product):
+    with st.expander("Product Details", expanded=True):
+        st.write("### Detailed Product View")
+        if 'raw_ec_thumbnails' in product and pd.notna(product['raw_ec_thumbnails']):
+            st.image(product['raw_ec_thumbnails'], width=300)
+        st.markdown(f"**Title:** {product['title']}")
+        st.markdown(f"**URI:** {product['uri']}")
+        st.markdown(f"**Description:** {product['raw_ec_shortdesc']}")
+        st.markdown(f"**Price:** {product['raw_ec_price']}")
+        st.markdown(f"**Rating:** {product['raw_ec_rating']}")
+        st.markdown(f"**Reviews:** {product['raw_avg_reviews']}")
+        # Add more detailed product fields as needed
+        st.button("Close", key="close_popup")
 
 if __name__ == "__main__":
     main()
