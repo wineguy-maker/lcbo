@@ -40,18 +40,23 @@ def sort_data_filter(data, sort_by):
         data = data.sort_values(by='weighted_rating', ascending=False)
     return data
 
-def filter_data(data, country='Select Country', region='Select Region', varietal='Select Varietal', in_stock=False, only_vintages=False):
+def filter_data(data, country='Select Country', region='Select Region', varietal='Select Varietal', in_stock=False, only_vintages=False, store='Select Store'):
     if country != 'Select Country':
         data = data[data['raw_country_of_manufacture'] == country]
     if region != 'Select Region':
         data = data[data['raw_lcbo_region_name'] == region]
     if varietal != 'Select Varietal':
         data = data[data['raw_lcbo_varietal_name'] == varietal]
+    if store != 'Select Store':
+        data = data[data['store_name'] == store]
     if in_stock:
         data = data[data['stores_inventory'] > 0]
     if only_vintages:
         data = data[data['raw_lcbo_program'].str.contains(r"['\"]Vintages['\"]", regex=True, na=False)]
     return data
+# -------------------------------
+# Refresh function (refresh_data.py)
+# -------------------------------
 def refresh_data(store_id=None):
     current_time = datetime.now()
     st.info("Refreshing data from API...")
@@ -133,7 +138,6 @@ def refresh_data(store_id=None):
                 all_items.extend(data['results'])
             else:
                 st.error(f"Key 'results' not found in the response during pagination. Response: {data}")
-            st.write(f"Retrieved items: {len(all_items)}")  # Debug print to show progress
             time.sleep(1)  # Add a delay to avoid hitting the server too frequently
 
         products = []
@@ -219,19 +223,16 @@ def main():
     in_stock = st.sidebar.checkbox("In Stock Only", value=False)
     only_vintages = st.sidebar.checkbox("Only Vintages", value=False)
 
-    # Refresh Data Button
-    if st.sidebar.button("Refresh Data"):
-        store_ids = {
-            "Bradford": "145",
-            "E. Gwillimbury": "391",
-            "Upper Canada": "226",
-            "Yonge & Eg": "457"
-        }
-        if store != 'Select Store':
-            store_id = store_ids.get(store)
-            data = refresh_data(store_id=store_id)  # Refresh and reload the data using the store_id
-        else:
-            data = refresh_data()  # Refresh and reload the data
+    # Automatically refresh data when a store is selected
+    store_ids = {
+        "Bradford": "145",
+        "E. Gwillimbury": "391",
+        "Upper Canada": "226",
+        "Yonge & Eg": "457"
+    }
+    if store != 'Select Store':
+        store_id = store_ids.get(store)
+        data = refresh_data(store_id=store_id)  # Refresh and reload the data using the store_id
 
     # Apply Filters and Sorting
     filtered_data = data.copy()
