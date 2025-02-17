@@ -202,8 +202,22 @@ def refresh_data(store_id=None):
 def main():
     st.title("LCBO Wine Filter")
 
-    # Load data from CSV
-    data = load_data("products.csv")
+    # Store Selector
+    store_options = ['Select Store', 'Bradford', 'E. Gwillimbury', 'Upper Canada', 'Yonge & Eg']
+    store_ids = {
+        "Bradford": "145",
+        "E. Gwillimbury": "391",
+        "Upper Canada": "226",
+        "Yonge & Eg": "457"
+    }
+    store = st.sidebar.selectbox("Store", options=store_options)
+
+    # Refresh data when a store is selected
+    if store != 'Select Store':
+        store_id = store_ids.get(store)
+        data = refresh_data(store_id=store_id)  # Refresh and reload the data using the store_id
+    else:
+        data = load_data("products.csv")  # Load current data from CSV
 
     # Sidebar Filters
     st.sidebar.header("Filters")
@@ -214,25 +228,12 @@ def main():
     country_options = ['Select Country'] + sorted(data['raw_country_of_manufacture'].dropna().unique().tolist())
     region_options = ['Select Region'] + sorted(data['raw_lcbo_region_name'].dropna().unique().tolist())
     varietal_options = ['Select Varietal'] + sorted(data['raw_lcbo_varietal_name'].dropna().unique().tolist())
-    store_options = ['Select Store', 'Bradford', 'E. Gwillimbury', 'Upper Canada', 'Yonge & Eg']
 
     country = st.sidebar.selectbox("Country", options=country_options)
     region = st.sidebar.selectbox("Region", options=region_options)
     varietal = st.sidebar.selectbox("Varietal", options=varietal_options)
-    store = st.sidebar.selectbox("Store", options=store_options)
     in_stock = st.sidebar.checkbox("In Stock Only", value=False)
     only_vintages = st.sidebar.checkbox("Only Vintages", value=False)
-
-    # Automatically refresh data when a store is selected
-    store_ids = {
-        "Bradford": "145",
-        "E. Gwillimbury": "391",
-        "Upper Canada": "226",
-        "Yonge & Eg": "457"
-    }
-    if store != 'Select Store':
-        store_id = store_ids.get(store)
-        data = refresh_data(store_id=store_id)  # Refresh and reload the data using the store_id
 
     # Apply Filters and Sorting
     filtered_data = data.copy()
