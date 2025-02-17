@@ -40,23 +40,18 @@ def sort_data_filter(data, sort_by):
         data = data.sort_values(by='weighted_rating', ascending=False)
     return data
 
-def filter_data(data, country='Select Country', region='Select Region', varietal='Select Varietal', in_stock=False, only_vintages=False, store='Select Store'):
+def filter_data(data, country='Select Country', region='Select Region', varietal='Select Varietal', in_stock=False, only_vintages=False):
     if country != 'Select Country':
         data = data[data['raw_country_of_manufacture'] == country]
     if region != 'Select Region':
         data = data[data['raw_lcbo_region_name'] == region]
     if varietal != 'Select Varietal':
         data = data[data['raw_lcbo_varietal_name'] == varietal]
-    if store != 'Select Store':
-        data = data[data['store_name'] == store]
     if in_stock:
         data = data[data['stores_inventory'] > 0]
     if only_vintages:
         data = data[data['raw_lcbo_program'].str.contains(r"['\"]Vintages['\"]", regex=True, na=False)]
     return data
-# -------------------------------
-# Refresh function (refresh_data.py)
-# -------------------------------
 def refresh_data(store_id=None):
     current_time = datetime.now()
     st.info("Refreshing data from API...")
@@ -182,7 +177,11 @@ def refresh_data(store_id=None):
             }
             products.append(product_info)  # Append each product_info dictionary to the products list
 
-                # Save the DataFrame to a CSV file with UTF-8 encoding
+        st.write(f"Total number of products scraped: {len(products)}")
+
+        df_products = pd.DataFrame(products)
+        
+        # Save the DataFrame to a CSV file with UTF-8 encoding
         df_products.to_csv('products.csv', index=False, encoding='utf-8-sig')
 
         # Reload data from the new CSV file
@@ -193,7 +192,6 @@ def refresh_data(store_id=None):
     else:
         st.error("Failed to retrieve data from the API.")
         return None
-
 # -------------------------------
 # Main Streamlit App
 # -------------------------------
@@ -212,7 +210,7 @@ def main():
     country_options = ['Select Country'] + sorted(data['raw_country_of_manufacture'].dropna().unique().tolist())
     region_options = ['Select Region'] + sorted(data['raw_lcbo_region_name'].dropna().unique().tolist())
     varietal_options = ['Select Varietal'] + sorted(data['raw_lcbo_varietal_name'].dropna().unique().tolist())
-    store_options = ['Select Store'] + sorted(data['store_name'].dropna().unique().tolist())
+    store_options = ['Select Store', 'Bradford', 'E. Gwillimbury', 'Upper Canada', 'Yonge & Eg']
 
     country = st.sidebar.selectbox("Country", options=country_options)
     region = st.sidebar.selectbox("Region", options=region_options)
@@ -223,18 +221,22 @@ def main():
 
     # Refresh Data Button
     if st.sidebar.button("Refresh Data"):
+        store_ids = {
+            "Bradford": "145",
+            "E. Gwillimbury": "391",
+            "Upper Canada": "226",
+            "Yonge & Eg": "457"
+        }
         if store != 'Select Store':
-            store_id = data[data['store_name'] == store]['store_id'].values[0]
+            store_id = store_ids.get(store)
             data = refresh_data(store_id=store_id)  # Refresh and reload the data using the store_id
         else:
             data = refresh_data()  # Refresh and reload the data
 
-    # -----------------------------------------------------------
     # Apply Filters and Sorting
-    # -----------------------------------------------------------
     filtered_data = data.copy()
     filtered_data = filter_data(filtered_data, country=country, region=region, varietal=varietal, 
-                                in_stock=in_stock, only_vintages=only_vintages, store=store)
+                                in_stock=in_stock, only_vintages=only_vintages)
     filtered_data = search_data(filtered_data, search_text)
     sort_option = sort_by if sort_by != 'Sort by' else 'weighted_rating'
     if sort_option != 'weighted_rating':
@@ -244,9 +246,7 @@ def main():
 
     st.write(f"Showing **{len(filtered_data)}** products")
 
-    # -----------------------------------------------------------
     # Pagination (adjust page size as needed)
-    # -----------------------------------------------------------
     page_size = 10
     total_products = len(filtered_data)
     total_pages = (total_products // page_size) + (1 if total_products % page_size else 0)
@@ -258,15 +258,28 @@ def main():
     end_idx = start_idx + page_size
     page_data = filtered_data.iloc[start_idx:end_idx]
 
-    # -----------------------------------------------------------
-    # Displaying Products
-    # -----------------------------------------------------------
+    # Displaying Products with Detailed View
     for idx, row in page_data.iterrows():
         st.markdown(f"### {row['title']}")
         st.markdown(f"**Price:** ${row.get('raw_ec_price', 'N/A')} | **Rating:** {row.get('raw_ec_rating', 'N/A')} | **Reviews:** {row.get('raw_avg_reviews', 'N/A')}")
         if pd.notna(row.get('raw_ec_thumbnails', None)) and row.get('raw_ec_thumbnails', 'N/A') != 'N/A':
             st.image(row['raw_ec_thumbnails'], width=150)
+        if st.button("View Details", key=f"view_{idx}"):
+            view_detailed_product(row)
+
         st.markdown("---")
+
+def view_detailed_product(product):
+    st.write("### Detailed Product View")
+    if 'raw_ec_thumbnails' in product and pd.notna(product['raw_ec_thumbnails']):
+        st.image(product['raw_ec_thumbnails'], width=300)
+    st.markdown(f"**Title:** {product['title']}")
+    st.markdown(f"**URI:** {product['uri']}")
+    st.markdown(f"**Description:** {product['raw_ec_shortdesc']}")
+    st.markdown(f"**Price:** {product['raw_ec_price']}")
+    st.markdown(f"**Rating:** {product['raw_ec_rating']}")
+    st.markdown(f"**Reviews:** {product['raw_avg_reviews']}")
+    # Add more detailed product fields as needed
 
 if __name__ == "__main__":
     main()
