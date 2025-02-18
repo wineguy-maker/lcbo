@@ -284,7 +284,7 @@ def main():
     
     # Apply Filters and Sorting
     filtered_data = data.copy()
-    filtered_data = filter_data(filtered_data, country=country, region=region, varietal=varietal,
+    filtered_data = filter_data(filtered_data, country=country, region=region, varietal=varietal, exclude_usa=exclude_usa,
                                   in_stock=in_stock, only_vintages=only_vintages)
     filtered_data = search_data(filtered_data, search_text)
     sort_option = sort_by if sort_by != 'Sort by' else 'weighted_rating'
