@@ -320,34 +320,46 @@ def main():
                 st.image(large_image_url, use_container_width=True)
         else:
             st.write("No image available.")
-        
-        if st.button("View Details", key=f"view_{idx}"):
-            show_detailed_product_popup(row)
-        st.markdown("---")
 
-def show_detailed_product_popup(product):
-    with st.expander("Product Details", expanded=True):
+        # -- Instead of a "View Details" button, use an expander --
+        # Display Products
+for idx, row in page_data.iterrows():
+    st.markdown(f"### {row['title']}")
+    st.markdown(f"**Price:** ${row.get('raw_ec_price', 'N/A')} "
+                f"| **Rating:** {row.get('raw_ec_rating', 'N/A')} "
+                f"| **Reviews:** {row.get('raw_avg_reviews', 'N/A')}")
+
+    # Display the thumbnail image
+    thumbnail_url = row.get('raw_ec_thumbnails', None)
+    if pd.notna(thumbnail_url) and thumbnail_url != 'N/A':
+        st.image(thumbnail_url, width=150)
+        # (Optional) enlarge image logic here
+    else:
+        st.write("No image available.")
+
+    # -- Instead of a "View Details" button, use an expander --
+    with st.expander("Product Details", expanded=False):
+        # Here, just inline the same content you used to show in show_detailed_product_popup()
         st.write("### Detailed Product View")
-        thumbnail_url = product.get('raw_ec_thumbnails', None)
         if pd.notna(thumbnail_url) and thumbnail_url != 'N/A':
-            # Transform the image URL for a higher quality detail view.
             detail_image_url = transform_image_url(thumbnail_url, "1280.1280.png")
             st.image(detail_image_url, width=300)
-        st.markdown(f"**Title:** {product['title']}")
-        st.markdown(f"**URL:** {product['uri']}")
-        st.markdown(f"**Size:** {product['raw_lcbo_unit_volume']}")
-        st.markdown(f"**Description:** {product['raw_ec_shortdesc']}")
-        st.markdown(f"**Price:** {product['raw_ec_price']}")
-        st.markdown(f"**Rating:** {product['raw_ec_rating']}")
-        st.markdown(f"**Reviews:** {product['raw_avg_reviews']}")
-        st.markdown(f"**Store Inventory:** {product['stores_inventory']}")
-        st.markdown(f"**Monthly Sold Rank:** {product['raw_sell_rank_monthly']}")
-        st.markdown(f"**Monthly View Rank:** {product['raw_view_rank_monthly']}")
-        st.markdown(f"**Yearly Sold Rank:** {product['raw_sell_rank_yearly']}")
-        st.markdown(f"**Yearly View Rank:** {product['raw_view_rank_yearly']}")
-        st.markdown(f"**Alcohol %:** {product['raw_lcbo_alcohol_percent']}")
-        st.markdown(f"**Sugar (p/ltr):** {product['raw_lcbo_sugar_gm_per_ltr']}")
-        st.button("Close", key="close_popup")
+        st.markdown(f"**Title:** {row['title']}")
+        st.markdown(f"**URL:** {row['uri']}")
+        st.markdown(f"**Size:** {row['raw_lcbo_unit_volume']}")
+        st.markdown(f"**Description:** {row['raw_ec_shortdesc']}")
+        st.markdown(f"**Price:** {row['raw_ec_price']}")
+        st.markdown(f"**Rating:** {row['raw_ec_rating']}")
+        st.markdown(f"**Reviews:** {row['raw_avg_reviews']}")
+        st.markdown(f"**Store Inventory:** {row['stores_inventory']}")
+        st.markdown(f"**Monthly Sold Rank:** {row['raw_sell_rank_monthly']}")
+        st.markdown(f"**Monthly View Rank:** {row['raw_view_rank_monthly']}")
+        st.markdown(f"**Yearly Sold Rank:** {row['raw_sell_rank_yearly']}")
+        st.markdown(f"**Yearly View Rank:** {row['raw_view_rank_yearly']}")
+        st.markdown(f"**Alcohol %:** {row['raw_lcbo_alcohol_percent']}")
+        st.markdown(f"**Sugar (p/ltr):** {row['raw_lcbo_sugar_gm_per_ltr']}")
+
+    st.markdown("---")
 
 if __name__ == "__main__":
     main()
