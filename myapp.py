@@ -14,7 +14,6 @@ def load_data(file_path):
     return df
     
 # Function to load food items CSV
-@st.cache
 def load_food_items():
     return pd.read_csv('food_items.csv')
         
@@ -276,9 +275,10 @@ def main():
                                     'Top Seller - Month'])
     
     # Create filter options from data
+    
     # Load food items
     food_items = load_food_items()
-    st.write(f"categproes **{len(food_items)}** d")
+    
     # Get unique categories
     categories = food_items['Category'].unique()
     
