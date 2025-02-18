@@ -12,7 +12,12 @@ import re
 def load_data(file_path):
     df = pd.read_csv(file_path)
     return df
-
+    
+# Function to load food items CSV
+@st.cache
+def load_food_items():
+    return pd.read_csv('food_items.csv')
+        
 def sort_data(data, column):
     sorted_data = data.sort_values(by=column, ascending=False)
     return sorted_data
@@ -271,9 +276,16 @@ def main():
                                     'Top Seller - Month'])
     
     # Create filter options from data
+    # Load food items
+    food_items = load_food_items()
+    
+    # Get unique categories
+    categories = food_items['Category'].unique()
+    
     country_options = ['Select Country'] + sorted(data['raw_country_of_manufacture'].dropna().unique().tolist())
     region_options = ['Select Region'] + sorted(data['raw_lcbo_region_name'].dropna().unique().tolist())
     varietal_options = ['Select Varietal'] + sorted(data['raw_lcbo_varietal_name'].dropna().unique().tolist())
+    food_options = ['Select Dish'] + sorted(categories.dropna().unique().tolist())
     
     country = st.sidebar.selectbox("Country", options=country_options)
     region = st.sidebar.selectbox("Region", options=region_options)
@@ -283,10 +295,18 @@ def main():
     only_vintages = st.sidebar.checkbox("Only Vintages", value=False)
     
     # Apply Filters and Sorting
-    filtered_data = data.copy()
+    filtered_data = df.copy()
     filtered_data = filter_data(filtered_data, country=country, region=region, varietal=varietal, exclude_usa=exclude_usa,
-                                  in_stock=in_stock, only_vintages=only_vintages)
+                                in_stock=in_stock, only_vintages=only_vintages)
     filtered_data = search_data(filtered_data, search_text)
+
+    # Food Category Filtering
+    if food_category != 'Select Dish':
+        selected_items = food_items[food_items['Category'] == food_category]['FoodItem'].tolist()
+        filtered_data = filtered_data[filtered_data['raw_sysconcepts'].apply(
+            lambda x: any(item in x for item in selected_items)
+        )]
+
     sort_option = sort_by if sort_by != 'Sort by' else 'weighted_rating'
     if sort_option != 'weighted_rating':
         filtered_data = sort_data_filter(filtered_data, sort_option)
