@@ -322,22 +322,6 @@ def main():
             st.write("No image available.")
 
         # -- Instead of a "View Details" button, use an expander --
-        # Display Products
-    for idx, row in page_data.iterrows():
-        st.markdown(f"### {row['title']}")
-        st.markdown(f"**Price:** ${row.get('raw_ec_price', 'N/A')} "
-                    f"| **Rating:** {row.get('raw_ec_rating', 'N/A')} "
-                    f"| **Reviews:** {row.get('raw_avg_reviews', 'N/A')}")
-    
-        # Display the thumbnail image
-        thumbnail_url = row.get('raw_ec_thumbnails', None)
-        if pd.notna(thumbnail_url) and thumbnail_url != 'N/A':
-            st.image(thumbnail_url, width=150)
-            # (Optional) enlarge image logic here
-        else:
-            st.write("No image available.")
-
-        # -- Instead of a "View Details" button, use an expander --
         with st.expander("Product Details", expanded=False):
             # Here, just inline the same content you used to show in show_detailed_product_popup()
             st.write("### Detailed Product View")
