@@ -317,7 +317,7 @@ def main():
             # Add an "Enlarge Image" button below the thumbnail.
             with st.popover("Enlarge Image"):
                 large_image_url = transform_image_url(thumbnail_url, "2048.2048.png")
-                st.image(large_image_url, use_column_width=True)
+                st.image(large_image_url, use_container_width=True)
         else:
             st.write("No image available.")
         
