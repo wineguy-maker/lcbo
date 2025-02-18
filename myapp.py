@@ -15,6 +15,7 @@ def load_data(file_path):
 def sort_data(data, column):
     sorted_data = data.sort_values(by=column, ascending=False)
     return sorted_data
+
 # -------------------------------
 # Filter functions (filter.py)
 # -------------------------------
@@ -54,6 +55,7 @@ def filter_data(data, country='Select Country', region='Select Region', varietal
     if only_vintages:
         data = data[data['raw_lcbo_program'].str.contains(r"['\"]Vintages['\"]", regex=True, na=False)]
     return data
+
 # -------------------------------
 # Refresh function (refresh_data.py)
 # -------------------------------
@@ -126,7 +128,8 @@ def refresh_data(store_id=None):
                             }
                         ]
                     }
-                ],
+                ]
+            },
                 "numberOfResults": 500,
                 "firstResult": i * 500,
                 "aq": "@ec_visibility==(2,4) @cp_browsing_category_deny<>0 @ec_category==\"Products|Wine|Red Wine\" (@ec_rating==5..5 OR @ec_rating==4..4.9)"
@@ -173,7 +176,7 @@ def refresh_data(store_id=None):
                 'raw_online_inventory': raw_data.get('online_inventory', 'N/A'),
                 'raw_avg_reviews': raw_data.get('avg_reviews', 'N/A'),
                 'raw_ec_rating': raw_data.get('ec_rating', 'N/A'),
-                'weighted_rating': (raw_data.get('avg_reviews', 'N/A') * raw_data.get('ec_rating', 'N/A')),
+                'weighted_rating': 0.0,  # Placeholder for weighted rating
                 'raw_view_rank_yearly': raw_data.get('view_rank_yearly', 'N/A'),
                 'raw_view_rank_monthly': raw_data.get('view_rank_monthly', 'N/A'),
                 'raw_sell_rank_yearly': raw_data.get('sell_rank_yearly', 'N/A'),
@@ -185,17 +188,41 @@ def refresh_data(store_id=None):
 
         df_products = pd.DataFrame(products)
         
-        # Save the DataFrame to a CSV file with UTF-8 encoding
-        df_products.to_csv('products.csv', index=False, encoding='utf-8-sig')
+        # Calculate mean rating C
+        mean_rating = df_products[df_products['raw_avg_reviews'] > 0]['raw_ec_rating'].mean()
+        minimum_votes = 50 
+        # Calculate weighted ratings and update the DataFrame
+def weighted_rating(R, v, m, C):
+    """
+    Calculate the weighted rating for IMDb-style ratings.
 
-        # Reload data from the new CSV file
-        st.success("Data refreshed successfully!")
+    Parameters:
+    R (float): average rating of the item
+    v (int): number of votes for the item
+    m (int): minimum number of votes required to be listed
+    C (float): mean vote across the whole report
 
-        return load_data("products.csv")
+    Returns:
+    float: the weighted rating
+    """
+    return (v / (v + m)) * R + (m / (v + m)) * C
 
-    else:
-        st.error("Failed to retrieve data from the API.")
-        return None
+# Update the weighted rating for each product
+df_products['weighted_rating'] = df_products.apply(
+    lambda x: weighted_rating(x['raw_ec_rating'], x['raw_avg_reviews'], minimum_votes, mean_rating), axis=1
+)
+
+# Save the DataFrame to a CSV file with UTF-8 encoding
+df_products.to_csv('products.csv', index=False, encoding='utf-8-sig')
+
+# Reload data from the new CSV file
+st.success("Data refreshed successfully!")
+
+return load_data("products.csv")
+else:
+    st.error("Failed to retrieve data from the API.")
+    return None
+
 # -------------------------------
 # Main Streamlit App
 # -------------------------------
