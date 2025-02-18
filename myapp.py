@@ -55,6 +55,8 @@ def filter_data(data, country='Select Country', region='Select Region', varietal
         data = data[data['stores_inventory'] > 0]
     if only_vintages:
         data = data[data['raw_lcbo_program'].str.contains(r"['\"]Vintages['\"]", regex=True, na=False)]
+    if exclude_usa:
+        data = data[data['raw_country_of_manufacture'] != 'United States']
     return data
 
 # -------------------------------
@@ -276,9 +278,10 @@ def main():
     country = st.sidebar.selectbox("Country", options=country_options)
     region = st.sidebar.selectbox("Region", options=region_options)
     varietal = st.sidebar.selectbox("Varietal", options=varietal_options)
+    exclude_usa = st.sidebar.checkbox("Exclude USA", value=False)
     in_stock = st.sidebar.checkbox("In Stock Only", value=False)
     only_vintages = st.sidebar.checkbox("Only Vintages", value=False)
-
+    
     # Apply Filters and Sorting
     filtered_data = data.copy()
     filtered_data = filter_data(filtered_data, country=country, region=region, varietal=varietal,
