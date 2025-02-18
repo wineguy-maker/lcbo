@@ -61,7 +61,7 @@ def filter_data(data, country='Select Country', region='Select Region', varietal
 # -------------------------------
 def refresh_data(store_id=None):
     current_time = datetime.now()
-    st.info("Refreshing data from API...")
+    st.info("Refreshing data...")
 
     url = "https://platform.cloud.coveo.com/rest/search/v2?organizationId=lcboproduction2kwygmc"
     headers = {
@@ -109,7 +109,7 @@ def refresh_data(store_id=None):
     if 'results' in data:
         all_items = data['results']
         total_count = data['totalCount']
-        st.write(f"Total Count: {total_count}")
+        st.info(f"Total Count: {total_count}")
 
         num_requests = (total_count // 500) + (1 if total_count % 500 != 0 else 0)
 
