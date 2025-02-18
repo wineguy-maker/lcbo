@@ -207,12 +207,13 @@ def main():
         st.session_state.selected_store = 'Select Store'
     
     # Store Selector
-    store_options = ['Select Store', 'Bradford', 'E. Gwillimbury', 'Upper Canada', 'Yonge & Eg']
+    store_options = ['Select Store', 'Bradford', 'E. Gwillimbury', 'Upper Canada', 'Yonge & Eg', 'Dufferin & Steeles']
     store_ids = {
         "Bradford": "145",
         "E. Gwillimbury": "391",
         "Upper Canada": "226",
-        "Yonge & Eg": "457"
+        "Yonge & Eg": "457",
+        "Dufferin & Steeles": "618"
     }
     selected_store = st.sidebar.selectbox("Store", options=store_options)
 
