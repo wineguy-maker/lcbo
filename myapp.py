@@ -191,7 +191,7 @@ def refresh_data(store_id=None):
                 'raw_ec_rating': raw_data.get('ec_rating', 0),
                 'weighted_rating': 0.0,  # Placeholder for weighted rating
                 'raw_view_rank_yearly': raw_data.get('view_rank_yearly', 0),
-                'raw_view_rank_monthly': raw_data.get('view_rank_monthly', '0),
+                'raw_view_rank_monthly': raw_data.get('view_rank_monthly', 0),
                 'raw_sell_rank_yearly': raw_data.get('sell_rank_yearly', 0),
                 'raw_sell_rank_monthly': raw_data.get('sell_rank_monthly', 0)
             }
