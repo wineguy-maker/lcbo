@@ -20,7 +20,7 @@ def load_food_items():
         return food_items
     except Exception as e:
         st.error(f"Error loading food items: {e}")
-        return pd.DataFrame(columns=['Category', 'FoodItem'
+        return pd.DataFrame(columns=['Category', 'FoodItem'])
         
 def sort_data(data, column):
     sorted_data = data.sort_values(by=column, ascending=False)
