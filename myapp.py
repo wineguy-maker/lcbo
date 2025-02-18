@@ -312,7 +312,7 @@ def main():
             'in_stock': False,
             'only_vintages': False
         }
-
+        st.experimental_rerun()
     
     # Apply Filters and Sorting
     filtered_data = data.copy()
