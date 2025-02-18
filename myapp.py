@@ -321,7 +321,9 @@ def main():
         else:
             st.write("No image available.")
         
-       
+        if st.button("View Details", key=f"view_{idx}"):
+            show_detailed_product_popup(row)
+        st.markdown("---")
 
 def show_detailed_product_popup(product):
     with st.expander("Product Details", expanded=True):
