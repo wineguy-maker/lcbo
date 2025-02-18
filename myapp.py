@@ -50,12 +50,12 @@ def sort_data_filter(data, sort_by):
         data = data.sort_values(by='weighted_rating', ascending=False)
     return data
 
-def filter_data(data, country='Select Country', region='Select Region', varietal='Select Varietal', exclude_usa=False, in_stock=False, only_vintages=False, store='Select Store'):
-    if country != 'Select Country':
+def filter_data(data, country='All Countries', region='All Regions', varietal='All Varietals', exclude_usa=False, in_stock=False, only_vintages=False, store='Select Store'):
+    if country != 'All Countries':
         data = data[data['raw_country_of_manufacture'] == country]
-    if region != 'Select Region':
+    if region != 'All Regions':
         data = data[data['raw_lcbo_region_name'] == region]
-    if varietal != 'Select Varietal':
+    if varietal != 'All Varietals':
         data = data[data['raw_lcbo_varietal_name'] == varietal]
     if store != 'Select Store':
         data = data[data['store_name'] == store]
