@@ -331,7 +331,7 @@ def main():
                 detail_image_url = transform_image_url(thumbnail_url, "1280.1280.png")
                 st.image(detail_image_url, width=300)
             if pd.notna(row['raw_lcbo_program']) and row['raw_lcbo_program'] != 'N/A': 
-                st.markdown(f"**Vintage:** {row['raw_lcbo_program']}")
+                st.markdown(f"**Vintage**")
             st.markdown(f"**Title:** {row['title']}")
             st.markdown(f"**URL:** {row['uri']}")
             st.markdown(f"**Country:** {row['raw_country_of_manufacture']}")
