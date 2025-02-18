@@ -1,8 +1,9 @@
 import streamlit as st
 import pandas as pd
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 import requests
+import re
 
 # -------------------------------
 # Data Handling
@@ -55,6 +56,19 @@ def filter_data(data, country='Select Country', region='Select Region', varietal
     if only_vintages:
         data = data[data['raw_lcbo_program'].str.contains(r"['\"]Vintages['\"]", regex=True, na=False)]
     return data
+
+# -------------------------------
+# Helper: Transform Image URL
+# -------------------------------
+def transform_image_url(url, new_size):
+    """
+    Replace the ending pattern (e.g., '319.319.PNG') in the URL with the new size string.
+    new_size should include extension, e.g., '2048.2048.png' or '1280.1280.png'.
+    """
+    if not isinstance(url, str):
+        return url
+    # This regex finds a pattern like "digits.digits.ext" at the end of the URL
+    return re.sub(r"\d+\.\d+\.(png|PNG)$", new_size, url)
 
 # -------------------------------
 # Refresh function
@@ -220,10 +234,9 @@ def refresh_data(store_id=None):
 def main():
     st.title("LCBO Wine Filter")
     
-    # Initialize session state for store
+    # Initialize session state for store and image modal trigger
     if 'selected_store' not in st.session_state:
         st.session_state.selected_store = 'Select Store'
-
 
     # Store Selector
     store_options = ['Select Store', 'Bradford', 'E. Gwillimbury', 'Upper Canada', 'Yonge & Eg', 'Dufferin & Steeles']
@@ -247,8 +260,8 @@ def main():
     else:
         data = load_data("products.csv")
 
-    # Sidebar Filters
-    st.sidebar.header("Filters")
+    # Sidebar Filters with improved header
+    st.sidebar.header("Filter Options 🔍")
     search_text = st.sidebar.text_input("Search", value="")
     sort_by = st.sidebar.selectbox("Sort by",
                                    ['Sort by', '# of reviews', 'Rating', 'Yearly Views', 'Monthly Views', 'Yearly Sold',
@@ -294,8 +307,21 @@ def main():
     for idx, row in page_data.iterrows():
         st.markdown(f"### {row['title']}")
         st.markdown(f"**Price:** ${row.get('raw_ec_price', 'N/A')} | **Rating:** {row.get('raw_ec_rating', 'N/A')} | **Reviews:** {row.get('raw_avg_reviews', 'N/A')}")
-        if pd.notna(row.get('raw_ec_thumbnails', None)) and row.get('raw_ec_thumbnails', 'N/A') != 'N/A':
-            st.image(row['raw_ec_thumbnails'], width=150)
+        
+        # Display the thumbnail image
+        thumbnail_url = row.get('raw_ec_thumbnails', None)
+        if pd.notna(thumbnail_url) and thumbnail_url != 'N/A':
+            st.image(thumbnail_url, width=150)
+            # Add an "Enlarge Image" button below the thumbnail.
+            if st.button("Enlarge Image", key=f"enlarge_{idx}"):
+                # Transform thumbnail URL to larger image for tile view.
+                large_image_url = transform_image_url(thumbnail_url, "2048.2048.png")
+                # Display modal with larger image.
+                with st.modal("Larger Image"):
+                    st.image(large_image_url, use_column_width=True)
+        else:
+            st.write("No image available.")
+        
         if st.button("View Details", key=f"view_{idx}"):
             show_detailed_product_popup(row)
         st.markdown("---")
@@ -303,8 +329,11 @@ def main():
 def show_detailed_product_popup(product):
     with st.expander("Product Details", expanded=True):
         st.write("### Detailed Product View")
-        if 'raw_ec_thumbnails' in product and pd.notna(product['raw_ec_thumbnails']):
-            st.image(product['raw_ec_thumbnails'], width=300)
+        thumbnail_url = product.get('raw_ec_thumbnails', None)
+        if pd.notna(thumbnail_url) and thumbnail_url != 'N/A':
+            # Transform the image URL for a higher quality detail view.
+            detail_image_url = transform_image_url(thumbnail_url, "1280.1280.png")
+            st.image(detail_image_url, width=300)
         st.markdown(f"**Title:** {product['title']}")
         st.markdown(f"**URL:** {product['uri']}")
         st.markdown(f"**Size:** {product['raw_lcbo_unit_volume']}")
