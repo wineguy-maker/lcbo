@@ -315,12 +315,9 @@ def main():
         if pd.notna(thumbnail_url) and thumbnail_url != 'N/A':
             st.image(thumbnail_url, width=150)
             # Add an "Enlarge Image" button below the thumbnail.
-            if st.button("Enlarge Image", key=f"enlarge_{idx}"):
-                # Transform thumbnail URL to larger image for tile view.
+            with st.popover("Enlarge Image", key=f"enlarge_{idx}"):
                 large_image_url = transform_image_url(thumbnail_url, "2048.2048.png")
-                # Display modal with larger image.
-                with st.modal("Larger Image"):
-                    st.image(large_image_url, use_column_width=True)
+                st.image(large_image_url, use_column_width=True)
         else:
             st.write("No image available.")
         
