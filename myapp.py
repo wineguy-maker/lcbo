@@ -305,7 +305,7 @@ def main():
                                 in_stock=in_stock, only_vintages=only_vintages)
     filtered_data = search_data(filtered_data, search_text)
 
-    # Food Category Filtering
+     # Food Category Filtering
     if food_category != 'Select Dish':
         selected_items = food_items[food_items['Category'] == food_category]['FoodItem'].str.lower().tolist()
         filtered_data = filtered_data[filtered_data['raw_sysconcepts'].fillna('').apply(
@@ -318,7 +318,7 @@ def main():
     else:
         filtered_data = sort_data(filtered_data, sort_option)
 
-    st.write(f"Showing **{len(filtered_data)}** products"
+    st.write(f"Showing **{len(filtered_data)}** products")
              
     # Pagination
     page_size = 10
