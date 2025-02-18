@@ -289,7 +289,7 @@ def main():
     country_options = ['Select Country'] + sorted(data['raw_country_of_manufacture'].dropna().unique().tolist())
     region_options = ['Select Region'] + sorted(data['raw_lcbo_region_name'].dropna().unique().tolist())
     varietal_options = ['Select Varietal'] + sorted(data['raw_lcbo_varietal_name'].dropna().unique().tolist())
-    food_options = ['Select Dish'] + sorted(categories.unique().tolist())
+    food_options = ['Select Dish'] + sorted(categories.tolist())
     
     country = st.sidebar.selectbox("Country", options=country_options)
     region = st.sidebar.selectbox("Region", options=region_options)
