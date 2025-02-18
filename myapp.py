@@ -185,15 +185,15 @@ def refresh_data(store_id=None):
                 'raw_stores_low_stock_combined': raw_data.get('stores_low_stock_combined', 'N/A'),
                 'raw_stores_low_stock': raw_data.get('stores_low_stock', 'N/A'),
                 'raw_out_of_stock': raw_data.get('out_of_stock', 'N/A'),
-                'stores_inventory': raw_data.get('stores_inventory', 'N/A'),
-                'raw_online_inventory': raw_data.get('online_inventory', 'N/A'),
-                'raw_avg_reviews': raw_data.get('avg_reviews', 'N/A'),
-                'raw_ec_rating': raw_data.get('ec_rating', 'N/A'),
+                'stores_inventory': raw_data.get('stores_inventory', 0),
+                'raw_online_inventory': raw_data.get('online_inventory', 0),
+                'raw_avg_reviews': raw_data.get('avg_reviews', 0),
+                'raw_ec_rating': raw_data.get('ec_rating', 0),
                 'weighted_rating': 0.0,  # Placeholder for weighted rating
-                'raw_view_rank_yearly': raw_data.get('view_rank_yearly', 'N/A'),
-                'raw_view_rank_monthly': raw_data.get('view_rank_monthly', 'N/A'),
-                'raw_sell_rank_yearly': raw_data.get('sell_rank_yearly', 'N/A'),
-                'raw_sell_rank_monthly': raw_data.get('sell_rank_monthly', 'N/A')
+                'raw_view_rank_yearly': raw_data.get('view_rank_yearly', 0),
+                'raw_view_rank_monthly': raw_data.get('view_rank_monthly', '0),
+                'raw_sell_rank_yearly': raw_data.get('sell_rank_yearly', 0),
+                'raw_sell_rank_monthly': raw_data.get('sell_rank_monthly', 0)
             }
             products.append(product_info)
 
@@ -266,7 +266,7 @@ def main():
     st.sidebar.header("Filter Options 🔍")
     search_text = st.sidebar.text_input("Search", value="")
     sort_by = st.sidebar.selectbox("Sort by",
-                                   ['Sort by', '# of reviews', 'Rating', 'Top Viewed - Year', 'Top Viewed - Month', 'Top Seller - Year',
+                                   ['Sort by', '# of reviews', 'Rating', 'Top Veiwed - Year', 'Top Veiwed - Month', 'Top Seller - Year',
                                     'Top Seller - Month'])
     
     # Create filter options from data
