@@ -4,6 +4,7 @@ import time
 from datetime import datetime, timedelta
 import requests
 
+
 # -------------------------------
 # Data Handling (data_handler.py)
 # -------------------------------
@@ -12,9 +13,11 @@ def load_data(file_path):
     df = pd.read_csv(file_path)
     return df
 
+
 def sort_data(data, column):
     sorted_data = data.sort_values(by=column, ascending=False)
     return sorted_data
+
 
 # -------------------------------
 # Filter functions (filter.py)
@@ -23,6 +26,7 @@ def search_data(data, search_text):
     if search_text:
         data = data[data['title'].str.contains(search_text, case=False, na=False)]
     return data
+
 
 def sort_data_filter(data, sort_by):
     if sort_by == '# of reviews':
@@ -41,7 +45,9 @@ def sort_data_filter(data, sort_by):
         data = data.sort_values(by='weighted_rating', ascending=False)
     return data
 
-def filter_data(data, country='Select Country', region='Select Region', varietal='Select Varietal', in_stock=False, only_vintages=False, store='Select Store'):
+
+def filter_data(data, country='Select Country', region='Select Region', varietal='Select Varietal', in_stock=False,
+                only_vintages=False, store='Select Store'):
     if country != 'Select Country':
         data = data[data['raw_country_of_manufacture'] == country]
     if region != 'Select Region':
@@ -55,6 +61,7 @@ def filter_data(data, country='Select Country', region='Select Region', varietal
     if only_vintages:
         data = data[data['raw_lcbo_program'].str.contains(r"['\"]Vintages['\"]", regex=True, na=False)]
     return data
+
 
 # -------------------------------
 # Refresh function (refresh_data.py)
@@ -71,7 +78,7 @@ def refresh_data(store_id=None):
         "Content-Type": "application/json",
         "Referer": "https://www.lcbo.com/"
     }
-    
+
     initial_payload = {
         "q": "",
         "tab": "clp-products-wine-red_wine",
@@ -91,7 +98,7 @@ def refresh_data(store_id=None):
         "firstResult": 0,
         "aq": "@ec_visibility==(2,4) @cp_browsing_category_deny<>0 @ec_category==\"Products|Wine|Red Wine\" (@ec_rating==5..5 OR @ec_rating==4..4.9)"
     }
-    
+
     if store_id:
         dictionaryFieldContext = {
             "stores_stock": "",
@@ -128,8 +135,7 @@ def refresh_data(store_id=None):
                             }
                         ]
                     }
-                ]
-            },
+                ],
                 "numberOfResults": 500,
                 "firstResult": i * 500,
                 "aq": "@ec_visibility==(2,4) @cp_browsing_category_deny<>0 @ec_category==\"Products|Wine|Red Wine\" (@ec_rating==5..5 OR @ec_rating==4..4.9)"
@@ -172,11 +178,11 @@ def refresh_data(store_id=None):
                 'raw_stores_low_stock_combined': raw_data.get('stores_low_stock_combined', 'N/A'),
                 'raw_stores_low_stock': raw_data.get('stores_low_stock', 'N/A'),
                 'raw_out_of_stock': raw_data.get('out_of_stock', 'N/A'),
-                'stores_inventory' : raw_data.get('stores_inventory', 'N/A'),
+                'stores_inventory': raw_data.get('stores_inventory', 'N/A'),
                 'raw_online_inventory': raw_data.get('online_inventory', 'N/A'),
                 'raw_avg_reviews': raw_data.get('avg_reviews', 'N/A'),
                 'raw_ec_rating': raw_data.get('ec_rating', 'N/A'),
-                'weighted_rating': 0.0,  # Placeholder for weighted rating
+                'weighted_rating': (raw_data.get('avg_reviews', 'N/A') * raw_data.get('ec_rating', 'N/A')),
                 'raw_view_rank_yearly': raw_data.get('view_rank_yearly', 'N/A'),
                 'raw_view_rank_monthly': raw_data.get('view_rank_monthly', 'N/A'),
                 'raw_sell_rank_yearly': raw_data.get('sell_rank_yearly', 'N/A'),
@@ -187,41 +193,19 @@ def refresh_data(store_id=None):
         st.write(f"Total number of products scraped: {len(products)}")
 
         df_products = pd.DataFrame(products)
-        
-        # Calculate mean rating C
-        mean_rating = df_products[df_products['raw_avg_reviews'] > 0]['raw_ec_rating'].mean()
-        minimum_votes = 50 
-        # Calculate weighted ratings and update the DataFrame
-def weighted_rating(R, v, m, C):
-    """
-    Calculate the weighted rating for IMDb-style ratings.
 
-    Parameters:
-    R (float): average rating of the item
-    v (int): number of votes for the item
-    m (int): minimum number of votes required to be listed
-    C (float): mean vote across the whole report
+        # Save the DataFrame to a CSV file with UTF-8 encoding
+        df_products.to_csv('products.csv', index=False, encoding='utf-8-sig')
 
-    Returns:
-    float: the weighted rating
-    """
-    return (v / (v + m)) * R + (m / (v + m)) * C
+        # Reload data from the new CSV file
+        st.success("Data refreshed successfully!")
 
-# Update the weighted rating for each product
-df_products['weighted_rating'] = df_products.apply(
-    lambda x: weighted_rating(x['raw_ec_rating'], x['raw_avg_reviews'], minimum_votes, mean_rating), axis=1
-)
+        return load_data("products.csv")
 
-# Save the DataFrame to a CSV file with UTF-8 encoding
-df_products.to_csv('products.csv', index=False, encoding='utf-8-sig')
+    else:
+        st.error("Failed to retrieve data from the API.")
+        return None
 
-# Reload data from the new CSV file
-st.success("Data refreshed successfully!")
-
-return load_data("products.csv")
-else:
-    st.error("Failed to retrieve data from the API.")
-    return None
 
 # -------------------------------
 # Main Streamlit App
@@ -232,7 +216,7 @@ def main():
     # Initialize session state for store
     if 'selected_store' not in st.session_state:
         st.session_state.selected_store = 'Select Store'
-    
+
     # Store Selector
     store_options = ['Select Store', 'Bradford', 'E. Gwillimbury', 'Upper Canada', 'Yonge & Eg', 'Dufferin & Steeles']
     store_ids = {
@@ -258,7 +242,9 @@ def main():
     # Sidebar Filters
     st.sidebar.header("Filters")
     search_text = st.sidebar.text_input("Search", value="")
-    sort_by = st.sidebar.selectbox("Sort by", ['Sort by', '# of reviews', 'Rating', 'Yearly Views', 'Monthly Views', 'Yearly Sold', 'Monthly Sold'])
+    sort_by = st.sidebar.selectbox("Sort by",
+                                   ['Sort by', '# of reviews', 'Rating', 'Yearly Views', 'Monthly Views', 'Yearly Sold',
+                                    'Monthly Sold'])
 
     # Create filter options from the data
     country_options = ['Select Country'] + sorted(data['raw_country_of_manufacture'].dropna().unique().tolist())
@@ -273,7 +259,7 @@ def main():
 
     # Apply Filters and Sorting
     filtered_data = data.copy()
-    filtered_data = filter_data(filtered_data, country=country, region=region, varietal=varietal, 
+    filtered_data = filter_data(filtered_data, country=country, region=region, varietal=varietal,
                                 in_stock=in_stock, only_vintages=only_vintages)
     filtered_data = search_data(filtered_data, search_text)
     sort_option = sort_by if sort_by != 'Sort by' else 'weighted_rating'
@@ -299,13 +285,15 @@ def main():
     # Displaying Products with Detailed View in a Popup
     for idx, row in page_data.iterrows():
         st.markdown(f"### {row['title']}")
-        st.markdown(f"**Price:** ${row.get('raw_ec_price', 'N/A')} | **Rating:** {row.get('raw_ec_rating', 'N/A')} | **Reviews:** {row.get('raw_avg_reviews', 'N/A')}")
+        st.markdown(
+            f"**Price:** ${row.get('raw_ec_price', 'N/A')} | **Rating:** {row.get('raw_ec_rating', 'N/A')} | **Reviews:** {row.get('raw_avg_reviews', 'N/A')}")
         if pd.notna(row.get('raw_ec_thumbnails', None)) and row.get('raw_ec_thumbnails', 'N/A') != 'N/A':
             st.image(row['raw_ec_thumbnails'], width=150)
         if st.button("View Details", key=f"view_{idx}"):
             show_detailed_product_popup(row)
 
         st.markdown("---")
+
 
 def show_detailed_product_popup(product):
     with st.expander("Product Details", expanded=True):
@@ -328,6 +316,7 @@ def show_detailed_product_popup(product):
         st.markdown(f"**Sugar (p/ltr):** {product['raw_lcbo_sugar_gm_per_ltr']}")
         # Add more detailed product fields as needed
         st.button("Close", key="close_popup")
+
 
 if __name__ == "__main__":
     main()
