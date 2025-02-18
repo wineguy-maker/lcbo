@@ -130,9 +130,9 @@ def refresh_data(store_id=None):
                     }
                 ]
             },
-                "numberOfResults": 500,
-                "firstResult": i * 500,
-                "aq": "@ec_visibility==(2,4) @cp_browsing_category_deny<>0 @ec_category==\"Products|Wine|Red Wine\" (@ec_rating==5..5 OR @ec_rating==4..4.9)"
+            "numberOfResults": 500,
+            "firstResult": i * 500,
+            "aq": "@ec_visibility==(2,4) @cp_browsing_category_deny<>0 @ec_category==\"Products|Wine|Red Wine\" (@ec_rating==5..5 OR @ec_rating==4..4.9)"
             }
             if store_id:
                 payload.update(dictionaryFieldContext)
