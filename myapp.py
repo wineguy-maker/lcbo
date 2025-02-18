@@ -183,7 +183,7 @@ def refresh_data(store_id=None):
             }
             products.append(product_info)
 
-        st.write(f"Total number of products scraped: {len(products)}")
+        st.write(f"Total number of products: {len(products)}")
         df_products = pd.DataFrame(products)
 
         # Calculate mean rating for products with reviews
@@ -221,8 +221,9 @@ def main():
     st.title("LCBO Wine Filter")
     
     # Initialize session state for store
-    if 'selected_store' not in st.session_state:
-        st.session_state.selected_store = 'Select Store'
+    if st.session_state.selected_store == 'Select Store':
+    st.warning("Please select a store to load the latest data.")
+    st.stop()
 
     # Store Selector
     store_options = ['Select Store', 'Bradford', 'E. Gwillimbury', 'Upper Canada', 'Yonge & Eg', 'Dufferin & Steeles']
