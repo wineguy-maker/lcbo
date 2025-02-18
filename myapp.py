@@ -308,8 +308,8 @@ def main():
     # Food Category Filtering
     if food_category != 'Select Dish':
         selected_items = food_items[food_items['Category'] == food_category]['FoodItem'].str.lower().tolist()
-        filtered_data = filtered_data[filtered_data['raw_sysconcepts'].apply(
-            lambda x: any(item in x.lower() for item in selected_items)
+        filtered_data = filtered_data[filtered_data['raw_sysconcepts'].fillna('').apply(
+            lambda x: any(item in str(x).lower() for item in selected_items)
         )]
 
     sort_option = sort_by if sort_by != 'Sort by' else 'weighted_rating'
@@ -318,8 +318,8 @@ def main():
     else:
         filtered_data = sort_data(filtered_data, sort_option)
 
-    st.write(f"Showing **{len(filtered_data)}** products")
-    
+    st.write(f"Showing **{len(filtered_data)}** products"
+             
     # Pagination
     page_size = 10
     total_products = len(filtered_data)
