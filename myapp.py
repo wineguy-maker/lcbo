@@ -190,7 +190,7 @@ def refresh_data(store_id=None):
         
         # Calculate mean rating C
         mean_rating = df_products[df_products['raw_avg_reviews'] > 0]['raw_ec_rating'].mean()
-        minimum_votes = 7 
+        minimum_votes = 5
         # Calculate weighted ratings and update the DataFrame
 def weighted_rating(R, v, m, C):
     """
