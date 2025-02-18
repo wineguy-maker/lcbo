@@ -286,10 +286,10 @@ def main():
     # Get unique categories
     categories = food_items['Category'].unique()
     
-    country_options = ['Select Country'] + sorted(data['raw_country_of_manufacture'].dropna().unique().tolist())
-    region_options = ['Select Region'] + sorted(data['raw_lcbo_region_name'].dropna().unique().tolist())
-    varietal_options = ['Select Varietal'] + sorted(data['raw_lcbo_varietal_name'].dropna().unique().tolist())
-    food_options = ['Select Dish'] + sorted(categories.tolist())
+    country_options = ['All Countries'] + sorted(data['raw_country_of_manufacture'].dropna().unique().tolist())
+    region_options = ['All Regions'] + sorted(data['raw_lcbo_region_name'].dropna().unique().tolist())
+    varietal_options = ['All Varietals'] + sorted(data['raw_lcbo_varietal_name'].dropna().unique().tolist())
+    food_options = ['All Dishes'] + sorted(categories.tolist())
     
     country = st.sidebar.selectbox("Country", options=country_options)
     region = st.sidebar.selectbox("Region", options=region_options)
@@ -307,7 +307,7 @@ def main():
     filtered_data = search_data(filtered_data, search_text)
 
      # Food Category Filtering
-    if food_category != 'Select Dish':
+    if food_category != 'All Dishes':
         selected_items = food_items[food_items['Category'] == food_category]['FoodItem'].str.lower().tolist()
         filtered_data = filtered_data[filtered_data['raw_sysconcepts'].fillna('').apply(
             lambda x: any(item in str(x).lower() for item in selected_items)
