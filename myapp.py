@@ -221,9 +221,9 @@ def main():
     st.title("LCBO Wine Filter")
     
     # Initialize session state for store
-    if st.session_state.selected_store == 'Select Store':
-       st.warning("Please select a store to load the latest data.")
-       st.stop()
+    if 'selected_store' not in st.session_state:
+        st.session_state.selected_store = 'Select Store'
+
 
     # Store Selector
     store_options = ['Select Store', 'Bradford', 'E. Gwillimbury', 'Upper Canada', 'Yonge & Eg', 'Dufferin & Steeles']
