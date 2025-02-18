@@ -323,43 +323,43 @@ def main():
 
         # -- Instead of a "View Details" button, use an expander --
         # Display Products
-for idx, row in page_data.iterrows():
-    st.markdown(f"### {row['title']}")
-    st.markdown(f"**Price:** ${row.get('raw_ec_price', 'N/A')} "
-                f"| **Rating:** {row.get('raw_ec_rating', 'N/A')} "
-                f"| **Reviews:** {row.get('raw_avg_reviews', 'N/A')}")
-
-    # Display the thumbnail image
-    thumbnail_url = row.get('raw_ec_thumbnails', None)
-    if pd.notna(thumbnail_url) and thumbnail_url != 'N/A':
-        st.image(thumbnail_url, width=150)
-        # (Optional) enlarge image logic here
-    else:
-        st.write("No image available.")
-
-    # -- Instead of a "View Details" button, use an expander --
-    with st.expander("Product Details", expanded=False):
-        # Here, just inline the same content you used to show in show_detailed_product_popup()
-        st.write("### Detailed Product View")
+    for idx, row in page_data.iterrows():
+        st.markdown(f"### {row['title']}")
+        st.markdown(f"**Price:** ${row.get('raw_ec_price', 'N/A')} "
+                    f"| **Rating:** {row.get('raw_ec_rating', 'N/A')} "
+                    f"| **Reviews:** {row.get('raw_avg_reviews', 'N/A')}")
+    
+        # Display the thumbnail image
+        thumbnail_url = row.get('raw_ec_thumbnails', None)
         if pd.notna(thumbnail_url) and thumbnail_url != 'N/A':
-            detail_image_url = transform_image_url(thumbnail_url, "1280.1280.png")
-            st.image(detail_image_url, width=300)
-        st.markdown(f"**Title:** {row['title']}")
-        st.markdown(f"**URL:** {row['uri']}")
-        st.markdown(f"**Size:** {row['raw_lcbo_unit_volume']}")
-        st.markdown(f"**Description:** {row['raw_ec_shortdesc']}")
-        st.markdown(f"**Price:** {row['raw_ec_price']}")
-        st.markdown(f"**Rating:** {row['raw_ec_rating']}")
-        st.markdown(f"**Reviews:** {row['raw_avg_reviews']}")
-        st.markdown(f"**Store Inventory:** {row['stores_inventory']}")
-        st.markdown(f"**Monthly Sold Rank:** {row['raw_sell_rank_monthly']}")
-        st.markdown(f"**Monthly View Rank:** {row['raw_view_rank_monthly']}")
-        st.markdown(f"**Yearly Sold Rank:** {row['raw_sell_rank_yearly']}")
-        st.markdown(f"**Yearly View Rank:** {row['raw_view_rank_yearly']}")
-        st.markdown(f"**Alcohol %:** {row['raw_lcbo_alcohol_percent']}")
-        st.markdown(f"**Sugar (p/ltr):** {row['raw_lcbo_sugar_gm_per_ltr']}")
+            st.image(thumbnail_url, width=150)
+            # (Optional) enlarge image logic here
+        else:
+            st.write("No image available.")
 
-    st.markdown("---")
+        # -- Instead of a "View Details" button, use an expander --
+        with st.expander("Product Details", expanded=False):
+            # Here, just inline the same content you used to show in show_detailed_product_popup()
+            st.write("### Detailed Product View")
+            if pd.notna(thumbnail_url) and thumbnail_url != 'N/A':
+                detail_image_url = transform_image_url(thumbnail_url, "1280.1280.png")
+                st.image(detail_image_url, width=300)
+            st.markdown(f"**Title:** {row['title']}")
+            st.markdown(f"**URL:** {row['uri']}")
+            st.markdown(f"**Size:** {row['raw_lcbo_unit_volume']}")
+            st.markdown(f"**Description:** {row['raw_ec_shortdesc']}")
+            st.markdown(f"**Price:** {row['raw_ec_price']}")
+            st.markdown(f"**Rating:** {row['raw_ec_rating']}")
+            st.markdown(f"**Reviews:** {row['raw_avg_reviews']}")
+            st.markdown(f"**Store Inventory:** {row['stores_inventory']}")
+            st.markdown(f"**Monthly Sold Rank:** {row['raw_sell_rank_monthly']}")
+            st.markdown(f"**Monthly View Rank:** {row['raw_view_rank_monthly']}")
+            st.markdown(f"**Yearly Sold Rank:** {row['raw_sell_rank_yearly']}")
+            st.markdown(f"**Yearly View Rank:** {row['raw_view_rank_yearly']}")
+            st.markdown(f"**Alcohol %:** {row['raw_lcbo_alcohol_percent']}")
+            st.markdown(f"**Sugar (p/ltr):** {row['raw_lcbo_sugar_gm_per_ltr']}")
+    
+        st.markdown("---")
 
 if __name__ == "__main__":
     main()
