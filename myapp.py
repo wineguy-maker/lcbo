@@ -13,9 +13,14 @@ def load_data(file_path):
     df = pd.read_csv(file_path)
     return df
     
-# Function to load food items CSV
 def load_food_items():
-    return pd.read_csv('food_items.csv')
+    try:
+        food_items = pd.read_csv('food_items.csv')
+        st.write("Food items loaded successfully")
+        return food_items
+    except Exception as e:
+        st.error(f"Error loading food items: {e}")
+        return pd.DataFrame(columns=['Category', 'FoodItem'
         
 def sort_data(data, column):
     sorted_data = data.sort_values(by=column, ascending=False)
