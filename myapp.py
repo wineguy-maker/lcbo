@@ -233,7 +233,7 @@ def refresh_data(store_id=None):
 # -------------------------------
 def main():
     st.title("LCBO Wine Filter")
-    st.write(Streamlit V:",st.__version__) 
+    st.write("Streamlit V:",st.__version__) 
     # Add this line to clear the cached data
     st.cache_data.clear()
     # Initialize session state for store and image modal trigger
