@@ -335,6 +335,8 @@ def main():
             st.markdown(f"**Title:** {row['title']}")
             st.markdown(f"**URL:** {row['uri']}")
             st.markdown(f"**Country:** {row['raw_country_of_manufacture']}")
+            st.markdown(f"**Region:** {row['raw_lcbo_region_name']}")
+            st.markdown(f"**Region:** {row['raw_lcbo_varietal_name']}")
             st.markdown(f"**Size:** {row['raw_lcbo_unit_volume']}")
             st.markdown(f"**Description:** {row['raw_ec_shortdesc']}")
             st.markdown(f"**Price:** {row['raw_ec_price']}")
