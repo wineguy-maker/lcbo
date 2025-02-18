@@ -294,6 +294,7 @@ def main():
     country = st.sidebar.selectbox("Country", options=country_options)
     region = st.sidebar.selectbox("Region", options=region_options)
     varietal = st.sidebar.selectbox("Varietal", options=varietal_options)
+    food_category = st.sidebar.selectbox("Food Category", options=food_options)
     exclude_usa = st.sidebar.checkbox("Exclude USA", value=False)
     in_stock = st.sidebar.checkbox("In Stock Only", value=False)
     only_vintages = st.sidebar.checkbox("Only Vintages", value=False)
@@ -305,8 +306,8 @@ def main():
     filtered_data = search_data(filtered_data, search_text)
 
     # Food Category Filtering
-    if categories != 'Select Dish':
-        selected_items = food_items[food_items['Category'] == categories]['FoodItem'].tolist()
+    if food_category != 'Select Dish':
+        selected_items = food_items[food_items['Category'] == food_category]['FoodItem'].tolist()
         filtered_data = filtered_data[filtered_data['raw_sysconcepts'].apply(
             lambda x: any(item in x for item in selected_items)
         )]
