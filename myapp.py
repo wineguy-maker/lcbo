@@ -297,7 +297,7 @@ def show_detailed_product_popup(product):
         st.markdown(f"**Monthly View Rank:** {product['raw_view_rank_monthly']}")
         st.markdown(f"**Yearly Sold Rank:** {product['raw_sell_rank_yearly']}")
         st.markdown(f"**Yearly View Rank:** {product['raw_view_rank_yearly']}")
-        st.markdown(f"**Alcohol %:** {product['raw_lcbo_alcohol_percentage']}")
+        st.markdown(f"**Alcohol %:** {product['raw_lcbo_alcohol_percent']}")
         st.markdown(f"**Sugar (p/ltr):** {product['raw_lcbo_sugar_gm_per_ltr']}")
         # Add more detailed product fields as needed
         st.button("Close", key="close_popup")
