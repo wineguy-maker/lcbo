@@ -207,7 +207,7 @@ def refresh_data(store_id=None):
             }
             products.append(product_info)
 
-        st.write(f"Total number of products: {len(products)}")
+        
         df_products = pd.DataFrame(products)
 
         # Calculate mean rating for products with reviews
