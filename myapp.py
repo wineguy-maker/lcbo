@@ -30,14 +30,14 @@ def sort_data_filter(data, sort_by):
         data = data.sort_values(by='raw_avg_reviews', ascending=False)
     elif sort_by == 'Rating':
         data = data.sort_values(by='raw_ec_rating', ascending=False)
-    elif sort_by == 'Yearly Views':
-        data = data.sort_values(by='raw_view_rank_yearly', ascending=False)
-    elif sort_by == 'Monthly Views':
-        data = data.sort_values(by='raw_view_rank_monthly', ascending=False)
-    elif sort_by == 'Yearly Sold':
-        data = data.sort_values(by='raw_sell_rank_yearly', ascending=False)
-    elif sort_by == 'Monthly Sold':
-        data = data.sort_values(by='raw_sell_rank_monthly', ascending=False)
+    elif sort_by == 'Top Viewed - Year':
+        data = data.sort_values(by='raw_view_rank_yearly', ascending=True)
+    elif sort_by == 'Top Veiwed - Month':
+        data = data.sort_values(by='raw_view_rank_monthly', ascending=True)
+    elif sort_by == 'Top Seller - Year':
+        data = data.sort_values(by='raw_sell_rank_yearly', ascending=True)
+    elif sort_by == 'Top Seller - Month':
+        data = data.sort_values(by='raw_sell_rank_monthly', ascending=True)
     else:
         data = data.sort_values(by='weighted_rating', ascending=False)
     return data
@@ -266,8 +266,8 @@ def main():
     st.sidebar.header("Filter Options 🔍")
     search_text = st.sidebar.text_input("Search", value="")
     sort_by = st.sidebar.selectbox("Sort by",
-                                   ['Sort by', '# of reviews', 'Rating', 'Yearly Views', 'Monthly Views', 'Yearly Sold',
-                                    'Monthly Sold'])
+                                   ['Sort by', '# of reviews', 'Rating', 'Top Viewed - Year', 'Top Viewed - Month', 'Top Seller - Year',
+                                    'Top Seller - Month'])
     
     # Create filter options from data
     country_options = ['Select Country'] + sorted(data['raw_country_of_manufacture'].dropna().unique().tolist())
