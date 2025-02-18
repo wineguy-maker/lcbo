@@ -286,11 +286,19 @@ def show_detailed_product_popup(product):
         if 'raw_ec_thumbnails' in product and pd.notna(product['raw_ec_thumbnails']):
             st.image(product['raw_ec_thumbnails'], width=300)
         st.markdown(f"**Title:** {product['title']}")
-        st.markdown(f"**URI:** {product['uri']}")
+        st.markdown(f"**URL:** {product['uri']}")
+        st.markdown(f"**Size:** {product['raw_lcbo_unit_volume']}")
         st.markdown(f"**Description:** {product['raw_ec_shortdesc']}")
         st.markdown(f"**Price:** {product['raw_ec_price']}")
         st.markdown(f"**Rating:** {product['raw_ec_rating']}")
         st.markdown(f"**Reviews:** {product['raw_avg_reviews']}")
+        st.markdown(f"**Store Inventory:** {product['stores_inventory']}")
+        st.markdown(f"**Monthly Sold Rank:** {product['raw_monthly_sold_rank']}")
+        st.markdown(f"**Monthly View Rank:** {product['raw_monthly_view_rank']}")
+        st.markdown(f"**Yearly Sold Rank:** {product['raw_yearly_sold_rank']}")
+        st.markdown(f"**Yearly View Rank:** {product['raw_yearly_view_rank']}")
+        st.markdown(f"**Alcohol %:** {product['raw_lcbo_alcohol_percentage']}")
+        st.markdown(f"**Sugar (p/ltr):** {product['raw_lcbo_sugar_gm_per_ltr']}")
         # Add more detailed product fields as needed
         st.button("Close", key="close_popup")
 
