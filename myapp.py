@@ -233,7 +233,8 @@ def refresh_data(store_id=None):
 # -------------------------------
 def main():
     st.title("LCBO Wine Filter")
-    
+    # Add this line to clear the cached data
+    st.cache_data.clear()
     # Initialize session state for store and image modal trigger
     if 'selected_store' not in st.session_state:
         st.session_state.selected_store = 'Select Store'
