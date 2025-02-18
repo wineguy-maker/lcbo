@@ -190,10 +190,10 @@ def refresh_data(store_id=None):
                 'raw_avg_reviews': raw_data.get('avg_reviews', 0),
                 'raw_ec_rating': raw_data.get('ec_rating', 0),
                 'weighted_rating': 0.0,  # Placeholder for weighted rating
-                'raw_view_rank_yearly': raw_data.get('view_rank_yearly', 0),
-                'raw_view_rank_monthly': raw_data.get('view_rank_monthly', 0),
-                'raw_sell_rank_yearly': raw_data.get('sell_rank_yearly', 0),
-                'raw_sell_rank_monthly': raw_data.get('sell_rank_monthly', 0)
+                'raw_view_rank_yearly': raw_data.get('view_rank_yearly', 'N/A'),
+                'raw_view_rank_monthly': raw_data.get('view_rank_monthly', 'N/A'),
+                'raw_sell_rank_yearly': raw_data.get('sell_rank_yearly', 'N/A'),
+                'raw_sell_rank_monthly': raw_data.get('sell_rank_monthly', 'N/A')
             }
             products.append(product_info)
 
