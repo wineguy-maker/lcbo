@@ -169,7 +169,7 @@ def refresh_data(store_id=None):
                 'raw_stores_low_stock_combined': raw_data.get('stores_low_stock_combined', 'N/A'),
                 'raw_stores_low_stock': raw_data.get('stores_low_stock', 'N/A'),
                 'raw_out_of_stock': raw_data.get('out_of_stock', 'N/A'),
-                'raw_stores_inventory' : raw_data.get('stores_inventory', 'N/A'),
+                'stores_inventory' : raw_data.get('stores_inventory', 'N/A'),
                 'raw_online_inventory': raw_data.get('online_inventory', 'N/A'),
                 'raw_avg_reviews': raw_data.get('avg_reviews', 'N/A'),
                 'raw_ec_rating': raw_data.get('ec_rating', 'N/A'),
@@ -292,7 +292,7 @@ def show_detailed_product_popup(product):
         st.markdown(f"**Price:** {product['raw_ec_price']}")
         st.markdown(f"**Rating:** {product['raw_ec_rating']}")
         st.markdown(f"**Reviews:** {product['raw_avg_reviews']}")
-        st.markdown(f"**Store Inventory:** {product['raw_stores_inventory']}")
+        st.markdown(f"**Store Inventory:** {product['stores_inventory']}")
         st.markdown(f"**Monthly Sold Rank:** {product['raw_sell_rank_monthly']}")
         st.markdown(f"**Monthly View Rank:** {product['raw_view_rank_monthly']}")
         st.markdown(f"**Yearly Sold Rank:** {product['raw_sell_rank_yearly']}")
