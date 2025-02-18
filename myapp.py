@@ -32,7 +32,7 @@ def sort_data_filter(data, sort_by):
     if sort_by == '# of reviews':
         data = data.sort_values(by='raw_avg_reviews', ascending=False)
     elif sort_by == 'Rating':
-        data = data.sort_values(by='raw_ec_rating', ascending=False)
+        data = data.sort_values(by= 'raw_ec_rating', ascending = False)
     elif sort_by == 'Yearly Views':
         data = data.sort_values(by='raw_yearly_views', ascending=False)
     elif sort_by == 'Monthly Views':
@@ -135,11 +135,12 @@ def refresh_data(store_id=None):
                             }
                         ]
                     }
-                ],
-                "numberOfResults": 500,
-                "firstResult": i * 500,
-                "aq": "@ec_visibility==(2,4) @cp_browsing_category_deny<>0 @ec_category==\"Products|Wine|Red Wine\" (@ec_rating==5..5 OR @ec_rating==4..4.9)"
+                ]
             }
+            payload["numberOfResults"] = 500
+            payload["firstResult"] = i * 500
+            payload[
+                "aq"] = "@ec_visibility==(2,4) @cp_browsing_category_deny<>0 @ec_category==\"Products|Wine|Red Wine\" (@ec_rating==5..5 OR @ec_rating==4..4.9)"
             if store_id:
                 payload.update(dictionaryFieldContext)
             data = get_items(payload)
@@ -182,7 +183,7 @@ def refresh_data(store_id=None):
                 'raw_online_inventory': raw_data.get('online_inventory', 'N/A'),
                 'raw_avg_reviews': raw_data.get('avg_reviews', 'N/A'),
                 'raw_ec_rating': raw_data.get('ec_rating', 'N/A'),
-                'weighted_rating': (raw_data.get('avg_reviews', 'N/A') * raw_data.get('ec_rating', 'N/A')),
+                'weighted_rating': 0.0,  # Placeholder for weighted rating
                 'raw_view_rank_yearly': raw_data.get('view_rank_yearly', 'N/A'),
                 'raw_view_rank_monthly': raw_data.get('view_rank_monthly', 'N/A'),
                 'raw_sell_rank_yearly': raw_data.get('sell_rank_yearly', 'N/A'),
@@ -194,6 +195,31 @@ def refresh_data(store_id=None):
 
         df_products = pd.DataFrame(products)
 
+        # Calculate mean rating
+        mean_rating = df_products[df_products['raw_avg_reviews'] > 0]['raw_ec_rating'].mean()
+        minimum_votes = 7
+
+        # Calculate weighted ratings and update the DataFrame
+        def weighted_rating(R, v, m, C):
+            """
+            Calculate the weighted rating for IMDb-style ratings.
+
+            Parameters:
+            R (float): average rating of the item
+            v (int): number of votes for the item
+            m (int): minimum number of votes required to be listed
+            C (float): mean vote across the whole report
+
+            Returns:
+            float: the weighted rating
+            """
+            return (v / (v + m)) * R + (m / (v + m)) * C
+
+        # Update the weighted rating for each product
+        df_products['weighted_rating'] = df_products.apply(
+            lambda x: weighted_rating(x['raw_ec_rating'], x['raw_avg_reviews'], minimum_votes, mean_rating), axis=1
+        )
+
         # Save the DataFrame to a CSV file with UTF-8 encoding
         df_products.to_csv('products.csv', index=False, encoding='utf-8-sig')
 
@@ -201,122 +227,119 @@ def refresh_data(store_id=None):
         st.success("Data refreshed successfully!")
 
         return load_data("products.csv")
-
     else:
         st.error("Failed to retrieve data from the API.")
         return None
 
+    # -------------------------------
+    # Main Streamlit App
+    # -------------------------------
+    def main():
+        st.title("LCBO Wine Filter")
 
-# -------------------------------
-# Main Streamlit App
-# -------------------------------
-def main():
-    st.title("LCBO Wine Filter")
+        # Initialize session state for store
+        if 'selected_store' not in st.session_state:
+            st.session_state.selected_store = 'Select Store'
 
-    # Initialize session state for store
-    if 'selected_store' not in st.session_state:
-        st.session_state.selected_store = 'Select Store'
+        # Store Selector
+        store_options = ['Select Store', 'Bradford', 'E. Gwillimbury', 'Upper Canada', 'Yonge & Eg',
+                         'Dufferin & Steeles']
+        store_ids = {
+            "Bradford": "145",
+            "E. Gwillimbury": "391",
+            "Upper Canada": "226",
+            "Yonge & Eg": "457",
+            "Dufferin & Steeles": "618"
+        }
+        selected_store = st.sidebar.selectbox("Store", options=store_options)
 
-    # Store Selector
-    store_options = ['Select Store', 'Bradford', 'E. Gwillimbury', 'Upper Canada', 'Yonge & Eg', 'Dufferin & Steeles']
-    store_ids = {
-        "Bradford": "145",
-        "E. Gwillimbury": "391",
-        "Upper Canada": "226",
-        "Yonge & Eg": "457",
-        "Dufferin & Steeles": "618"
-    }
-    selected_store = st.sidebar.selectbox("Store", options=store_options)
-
-    # Refresh data only if the store selection changes
-    if selected_store != st.session_state.selected_store:
-        st.session_state.selected_store = selected_store
-        if selected_store != 'Select Store':
-            store_id = store_ids.get(selected_store)
-            data = refresh_data(store_id=store_id)  # Refresh and reload the data using the store_id
+        # Refresh data only if the store selection changes
+        if selected_store != st.session_state.selected_store:
+            st.session_state.selected_store = selected_store
+            if selected_store != 'Select Store':
+                store_id = store_ids.get(selected_store)
+                data = refresh_data(store_id=store_id)  # Refresh and reload the data using the store_id
+            else:
+                data = load_data("products.csv")  # Load current data from CSV
         else:
             data = load_data("products.csv")  # Load current data from CSV
-    else:
-        data = load_data("products.csv")  # Load current data from CSV
 
-    # Sidebar Filters
-    st.sidebar.header("Filters")
-    search_text = st.sidebar.text_input("Search", value="")
-    sort_by = st.sidebar.selectbox("Sort by",
-                                   ['Sort by', '# of reviews', 'Rating', 'Yearly Views', 'Monthly Views', 'Yearly Sold',
-                                    'Monthly Sold'])
+        # Sidebar Filters
+        st.sidebar.header("Filters")
+        search_text = st.sidebar.text_input("Search", value="")
+        sort_by = st.sidebar.selectbox("Sort by", ['Sort by', '# of reviews', 'Rating', 'Yearly Views', 'Monthly Views',
+                                                   'Yearly Sold', 'Monthly Sold'])
 
-    # Create filter options from the data
-    country_options = ['Select Country'] + sorted(data['raw_country_of_manufacture'].dropna().unique().tolist())
-    region_options = ['Select Region'] + sorted(data['raw_lcbo_region_name'].dropna().unique().tolist())
-    varietal_options = ['Select Varietal'] + sorted(data['raw_lcbo_varietal_name'].dropna().unique().tolist())
+        # Create filter options from the data
+        country_options = ['Select Country'] + sorted(data['raw_country_of_manufacture'].dropna().unique().tolist())
+        region_options = ['Select Region'] + sorted(data['raw_lcbo_region_name'].dropna().unique().tolist())
+        varietal_options = ['Select Varietal'] + sorted(data['raw_lcbo_varietal_name'].dropna().unique().tolist())
 
-    country = st.sidebar.selectbox("Country", options=country_options)
-    region = st.sidebar.selectbox("Region", options=region_options)
-    varietal = st.sidebar.selectbox("Varietal", options=varietal_options)
-    in_stock = st.sidebar.checkbox("In Stock Only", value=False)
-    only_vintages = st.sidebar.checkbox("Only Vintages", value=False)
+        country = st.sidebar.selectbox("Country", options=country_options)
+        region = st.sidebar.selectbox("Region", options=region_options)
+        varietal = st.sidebar.selectbox("Varietal", options=varietal_options)
+        in_stock = st.sidebar.checkbox("In Stock Only", value=False)
+        only_vintages = st.sidebar.checkbox("Only Vintages", value=False)
 
-    # Apply Filters and Sorting
-    filtered_data = data.copy()
-    filtered_data = filter_data(filtered_data, country=country, region=region, varietal=varietal,
-                                in_stock=in_stock, only_vintages=only_vintages)
-    filtered_data = search_data(filtered_data, search_text)
-    sort_option = sort_by if sort_by != 'Sort by' else 'weighted_rating'
-    if sort_option != 'weighted_rating':
-        filtered_data = sort_data_filter(filtered_data, sort_option)
-    else:
-        filtered_data = sort_data(filtered_data, sort_option)
+        # Apply Filters and Sorting
+        filtered_data = data.copy()
+        filtered_data = filter_data(filtered_data, country=country, region=region, varietal=varietal,
+                                    in_stock=in_stock, only_vintages=only_vintages)
+        filtered_data = search_data(filtered_data, search_text)
+        sort_option = sort_by if sort_by != 'Sort by' else 'weighted_rating'
+        if sort_option != 'weighted_rating':
+            filtered_data = sort_data_filter(filtered_data, sort_option)
+        else:
+            filtered_data = sort_data(filtered_data, sort_option)
 
-    st.write(f"Showing **{len(filtered_data)}** products")
+        st.write(f"Showing **{len(filtered_data)}** products")
 
-    # Pagination (adjust page size as needed)
-    page_size = 10
-    total_products = len(filtered_data)
-    total_pages = (total_products // page_size) + (1 if total_products % page_size else 0)
-    if total_pages > 0:
-        page = st.number_input("Page", min_value=1, max_value=total_pages, value=1, step=1)
-    else:
-        page = 1
-    start_idx = (page - 1) * page_size
-    end_idx = start_idx + page_size
-    page_data = filtered_data.iloc[start_idx:end_idx]
+        # Pagination (adjust page size as needed)
+        page_size = 10
+        total_products = len(filtered_data)
+        total_pages = (total_products // page_size) + (1 if total_products % page_size else 0)
+        if total_pages > 0:
+            page = st.number_input("Page", min_value=1, max_value=total_pages, value=1, step=1)
+        else:
+            page = 1
+        start_idx = (page - 1) * page_size
+        end_idx = start_idx + page_size
+        page_data = filtered_data.iloc[start_idx:end_idx]
 
-    # Displaying Products with Detailed View in a Popup
-    for idx, row in page_data.iterrows():
-        st.markdown(f"### {row['title']}")
-        st.markdown(
-            f"**Price:** ${row.get('raw_ec_price', 'N/A')} | **Rating:** {row.get('raw_ec_rating', 'N/A')} | **Reviews:** {row.get('raw_avg_reviews', 'N/A')}")
-        if pd.notna(row.get('raw_ec_thumbnails', None)) and row.get('raw_ec_thumbnails', 'N/A') != 'N/A':
-            st.image(row['raw_ec_thumbnails'], width=150)
-        if st.button("View Details", key=f"view_{idx}"):
-            show_detailed_product_popup(row)
+        # Displaying Products with Detailed View in a Popup
+        for idx, row in page_data.iterrows():
+            st.markdown(f"### {row['title']}")
+            st.markdown(
+                f"**Price:** ${row.get('raw_ec_price', 'N/A')} | **Rating:** {row.get('raw_ec_rating', 'N/A')} | **Reviews:** {row.get('raw_avg_reviews', 'N/A')}")
+            if pd.notna(row.get('raw_ec_thumbnails', None)) and row.get('raw_ec_thumbnails', 'N/A') != 'N/A':
+                st.image(row['raw_ec_thumbnails'], width=150)
+            if st.button("View Details", key=f"view_{idx}"):
+                show_detailed_product_popup(row)
 
-        st.markdown("---")
+            st.markdown("---")
 
+    def show_detailed_product_popup(product):
+        with st.expander("Product Details", expanded=True):
+            st.write("### Detailed Product View")
+            if 'raw_ec_thumbnails' in product and pd.notna(product['raw_ec_thumbnails']):
+                st.image(product['raw_ec_thumbnails'], width=300)
+            st.markdown(f"**Title:** {product['title']}")
+            st.markdown(f"**URL:** {product['uri']}")
+            st.markdown(f"**Size:** {product['raw_lcbo_unit_volume']}")
+            st.markdown(f"**Description:** {product['raw_ec_shortdesc']}")
+            st.markdown(f"**Price:** {product['raw_ec_price']}")
+            st.markdown(f"**Rating:** {product['raw_ec_rating']}")
+            st.markdown(f"**Reviews:** {product['raw_avg_reviews']}")
+            st.markdown(f"**Store Inventory:** {product['stores_inventory']}")
+            st.markdown(f"**Monthly Sold Rank:** {product['raw_sell_rank_monthly']}")
+            st.markdown(f"**Monthly View Rank:** {product['raw_view_rank_monthly']}")
+            st.markdown(f"**Yearly Sold Rank:** {product['raw_sell_rank_yearly']}")
+            st.markdown(f"**Yearly View Rank:** {product['raw_view_rank_yearly']}")
+            st.markdown(f"**Alcohol %:** {product['raw_lcbo_alcohol_percent']}")
+            st.markdown(f"**Sugar (p/ltr):** {product['raw_lcbo_sugar_gm_per_ltr']}")
+            # Add more detailed product fields as needed
+            st.button("Close", key="close_popup")
 
-def show_detailed_product_popup(product):
-    with st.expander("Product Details", expanded=True):
-        st.write("### Detailed Product View")
-        if 'raw_ec_thumbnails' in product and pd.notna(product['raw_ec_thumbnails']):
-            st.image(product['raw_ec_thumbnails'], width=300)
-        st.markdown(f"**Title:** {product['title']}")
-        st.markdown(f"**URL:** {product['uri']}")
-        st.markdown(f"**Size:** {product['raw_lcbo_unit_volume']}")
-        st.markdown(f"**Description:** {product['raw_ec_shortdesc']}")
-        st.markdown(f"**Price:** {product['raw_ec_price']}")
-        st.markdown(f"**Rating:** {product['raw_ec_rating']}")
-        st.markdown(f"**Reviews:** {product['raw_avg_reviews']}")
-        st.markdown(f"**Store Inventory:** {product['stores_inventory']}")
-        st.markdown(f"**Monthly Sold Rank:** {product['raw_sell_rank_monthly']}")
-        st.markdown(f"**Monthly View Rank:** {product['raw_view_rank_monthly']}")
-        st.markdown(f"**Yearly Sold Rank:** {product['raw_sell_rank_yearly']}")
-        st.markdown(f"**Yearly View Rank:** {product['raw_view_rank_yearly']}")
-        st.markdown(f"**Alcohol %:** {product['raw_lcbo_alcohol_percent']}")
-        st.markdown(f"**Sugar (p/ltr):** {product['raw_lcbo_sugar_gm_per_ltr']}")
-        # Add more detailed product fields as needed
-        st.button("Close", key="close_popup")
+    if __name__ == "__main__":
+        main()
 
-
-if __name__ == "__main__":
-    main()
