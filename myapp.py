@@ -42,7 +42,7 @@ def sort_data_filter(data, sort_by):
         data = data.sort_values(by='weighted_rating', ascending=False)
     return data
 
-def filter_data(data, country='Select Country', region='Select Region', varietal='Select Varietal', in_stock=False, only_vintages=False, store='Select Store'):
+def filter_data(data, country='Select Country', region='Select Region', varietal='Select Varietal', exclude_usa=False, in_stock=False, only_vintages=False, store='Select Store'):
     if country != 'Select Country':
         data = data[data['raw_country_of_manufacture'] == country]
     if region != 'Select Region':
