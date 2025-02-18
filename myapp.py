@@ -301,17 +301,13 @@ def main():
 
     # Clear Filters button
     if st.sidebar.button("Clear Filters"):
-        st.session_state.filters = {
-            'search_text': "",
-            'sort_by'= 'Sort by',
-            'country': 'Select Country',
-            'region': 'Select Region',
-            'varietal': 'Select Varietal',
-            'food_category': 'Select Dish',
-            'exclude_usa': False,
-            'in_stock': False,
-            'only_vintages': False
-        }
+        country = st.sidebar.selectbox("Country", options=country_options)
+        region = st.sidebar.selectbox("Region", options=region_options)
+        varietal = st.sidebar.selectbox("Varietal", options=varietal_options)
+        food_category = st.sidebar.selectbox("Food Category", options=food_options)
+        exclude_usa = st.sidebar.checkbox("Exclude USA", value=False)
+        in_stock = st.sidebar.checkbox("In Stock Only", value=False)
+        only_vintages = st.sidebar.checkbox("Only Vintages", value=False)    
        
     
     # Apply Filters and Sorting
