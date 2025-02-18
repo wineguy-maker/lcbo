@@ -16,7 +16,6 @@ def load_data(file_path):
 def load_food_items():
     try:
         food_items = pd.read_csv('food_items.csv')
-        st.write("Food items loaded successfully")
         return food_items
     except Exception as e:
         st.error(f"Error loading food items: {e}")
@@ -290,7 +289,7 @@ def main():
     country_options = ['Select Country'] + sorted(data['raw_country_of_manufacture'].dropna().unique().tolist())
     region_options = ['Select Region'] + sorted(data['raw_lcbo_region_name'].dropna().unique().tolist())
     varietal_options = ['Select Varietal'] + sorted(data['raw_lcbo_varietal_name'].dropna().unique().tolist())
-    food_options = ['Select Dish'] + sorted(categories.dropna().unique().tolist())
+    food_options = ['Select Dish'] + sorted(categories.unique().tolist())
     
     country = st.sidebar.selectbox("Country", options=country_options)
     region = st.sidebar.selectbox("Region", options=region_options)
