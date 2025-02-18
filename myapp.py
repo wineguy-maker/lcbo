@@ -299,17 +299,7 @@ def main():
     in_stock = st.sidebar.checkbox("In Stock Only", value=False)
     only_vintages = st.sidebar.checkbox("Only Vintages", value=False)
 
-    # Clear Filters button
-    if st.sidebar.button("Clear Filters"):
-        country = st.sidebar.selectbox("Country", options=country_options)
-        region = st.sidebar.selectbox("Region", options=region_options)
-        varietal = st.sidebar.selectbox("Varietal", options=varietal_options)
-        food_category = st.sidebar.selectbox("Food Category", options=food_options)
-        exclude_usa = st.sidebar.checkbox("Exclude USA", value=False)
-        in_stock = st.sidebar.checkbox("In Stock Only", value=False)
-        only_vintages = st.sidebar.checkbox("Only Vintages", value=False)    
-       
-    
+   
     # Apply Filters and Sorting
     filtered_data = data.copy()
     filtered_data = filter_data(filtered_data, country=country, region=region, varietal=varietal, exclude_usa=exclude_usa,
