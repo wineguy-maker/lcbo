@@ -299,7 +299,7 @@ def main():
     in_stock = st.sidebar.checkbox("In Stock Only", value=False)
     only_vintages = st.sidebar.checkbox("Only Vintages", value=False)
 
-    # Clear Filters button
+        # Clear Filters button
     if st.sidebar.button("Clear Filters"):
         st.session_state.filters = {
             'search_text': "",
