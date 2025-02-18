@@ -307,9 +307,9 @@ def main():
 
     # Food Category Filtering
     if food_category != 'Select Dish':
-        selected_items = food_items[food_items['Category'] == food_category]['FoodItem'].tolist()
+        selected_items = food_items[food_items['Category'] == food_category]['FoodItem'].str.lower().tolist()
         filtered_data = filtered_data[filtered_data['raw_sysconcepts'].apply(
-            lambda x: any(item in x for item in selected_items)
+            lambda x: any(item in x.lower() for item in selected_items)
         )]
 
     sort_option = sort_by if sort_by != 'Sort by' else 'weighted_rating'
