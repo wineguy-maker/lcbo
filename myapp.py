@@ -305,8 +305,8 @@ def main():
     filtered_data = search_data(filtered_data, search_text)
 
     # Food Category Filtering
-    if food_category != 'Select Dish':
-        selected_items = food_items[food_items['Category'] == food_category]['FoodItem'].tolist()
+    if categories != 'Select Dish':
+        selected_items = food_items[food_items['Category'] == categories]['FoodItem'].tolist()
         filtered_data = filtered_data[filtered_data['raw_sysconcepts'].apply(
             lambda x: any(item in x for item in selected_items)
         )]
