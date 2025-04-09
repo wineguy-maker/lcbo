@@ -333,8 +333,7 @@ def main():
     sort_by = st.sidebar.selectbox("Sort by",
                                    ['Sort by', '# of reviews', 'Rating', 'Top Veiwed - Year', 'Top Veiwed - Month', 'Top Seller - Year',
                                     'Top Seller - Month'])
-    # Add "Only On Sale" checkbox
-    only_on_sale = st.sidebar.checkbox("Only On Sale", value=False)
+    
     
     # Create filter options from data
     
@@ -356,7 +355,8 @@ def main():
     exclude_usa = st.sidebar.checkbox("Exclude USA", value=False)
     in_stock = st.sidebar.checkbox("In Stock Only", value=False)
     only_vintages = st.sidebar.checkbox("Only Vintages", value=False)
-
+    # Add "Only On Sale" checkbox
+    only_on_sale = st.sidebar.checkbox("Only On Sale", value=False)
    
     # Apply Filters and Sorting
     filtered_data = data.copy()
