@@ -263,7 +263,7 @@ def save_favorite_wine(wine):
 # Upload to GitHub
 # -------------------------------
 def upload_to_github(file_path, repo, branch, commit_message):
-    token = os.getenv("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")  # Set the PAT in your environment variables
+    token = st.secrets["GITHUB_PAT"]  # Retrieve the token from Streamlit Secrets
     url = f"https://api.github.com/repos/{repo}/contents/{file_path}"
     headers = {
         "Authorization": f"token {token}",
