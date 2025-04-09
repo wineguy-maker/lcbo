@@ -20,6 +20,19 @@ def load_data():
         df = pd.read_csv(GITHUB_PRODUCTS_PATH, on_bad_lines='skip')
         # Normalize column names: strip whitespace and convert to lowercase
         df.columns = df.columns.str.strip().str.lower()
+
+        # Validate required columns
+        required_columns = [
+            'raw_country_of_manufacture', 'raw_lcbo_region_name', 'raw_lcbo_varietal_name',
+            'raw_ec_promo_price', 'raw_sysconcepts', 'stores_inventory', 'title'
+        ]
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            st.warning(f"The following required columns are missing in the data: {', '.join(missing_columns)}")
+            # Add missing columns with default values
+            for col in missing_columns:
+                df[col] = None
+
         st.success("Loaded current products.csv from GitHub.")
         return df
     except pd.errors.ParserError as e:
