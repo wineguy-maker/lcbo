@@ -326,22 +326,33 @@ def save_favorite_wine(wine):
 def upload_to_github(file_path, repo, branch, commit_message):
     import base64  # Import base64 for encoding
     token = st.secrets["GITHUB_PAT"]  # Retrieve the token from Streamlit Secrets
-    url = f"https://api.github.com/repos/{repo}/contents/{file_path}"
+    file_name = os.path.basename(file_path)  # Extract the file name
+    url = f"https://api.github.com/repos/{repo}/contents/{file_name}"  # Use only the file name in the URL
     headers = {
         "Authorization": f"token {token}",
         "Accept": "application/vnd.github.v3+json"
     }
 
     # Read the file content
-    with open(file_path, "rb") as file:
-        content = file.read()
+    try:
+        with open(file_path, "rb") as file:
+            content = file.read()
+    except FileNotFoundError:
+        st.error(f"File not found: {file_path}")
+        return
 
     # Base64 encode the file content
     encoded_content = base64.b64encode(content).decode("utf-8")
 
     # Get the current file SHA (if it exists)
     response = requests.get(url, headers=headers)
-    sha = response.json().get("sha") if response.status_code == 200 else None
+    if response.status_code == 200:
+        sha = response.json().get("sha")
+    elif response.status_code == 404:
+        sha = None  # File does not exist yet
+    else:
+        st.error(f"Failed to fetch file info from GitHub: {response.json()}")
+        return
 
     # Prepare the payload
     payload = {
@@ -355,9 +366,9 @@ def upload_to_github(file_path, repo, branch, commit_message):
     # Upload the file
     response = requests.put(url, headers=headers, json=payload)
     if response.status_code in [200, 201]:
-        print("File uploaded successfully!")
+        st.success(f"File '{file_name}' uploaded successfully to GitHub!")
     else:
-        print(f"Failed to upload file: {response.json()}")
+        st.error(f"Failed to upload file to GitHub: {response.json()}")
 
 # -------------------------------
 # Main Streamlit App
