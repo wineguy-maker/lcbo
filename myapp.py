@@ -313,19 +313,29 @@ def save_favorite_wine(wine):
     try:
         if not os.path.exists(favorites_file):
             # Create the file if it doesn't exist
-            pd.DataFrame([wine]).to_csv(favorites_file, index=False, encoding='utf-8-sig')
+            df = pd.DataFrame([wine])
+            df.to_csv(favorites_file, index=False, encoding='utf-8-sig')
             st.success(f"Created favorites.csv and added {wine['title']}!")
         else:
             # Load existing favorites
-            favorites = pd.read_csv(favorites_file)
+            try:
+                favorites = pd.read_csv(favorites_file)
+            except pd.errors.EmptyDataError:
+                # Handle the case where the file is empty
+                favorites = pd.DataFrame()
             # Check if the wine is already in favorites
-            if not favorites['title'].str.contains(wine['title'], case=False, na=False).any():
+            if not favorites.empty and not favorites['title'].str.contains(wine['title'], case=False, na=False).any():
                 # Append the new wine and save
                 favorites = pd.concat([favorites, pd.DataFrame([wine])], ignore_index=True)
                 favorites.to_csv(favorites_file, index=False, encoding='utf-8-sig')
                 st.success(f"Added {wine['title']} to favorites!")
-            else:
+            elif not favorites.empty:
                 st.warning(f"{wine['title']} is already in your favorites!")
+            else:
+                # If favorites is empty, create a new DataFrame with the wine
+                favorites = pd.DataFrame([wine])
+                favorites.to_csv(favorites_file, index=False, encoding='utf-8-sig')
+                st.success(f"Added {wine['title']} to favorites!")
 
         # Upload the updated favorites.csv file to GitHub
         try:
@@ -413,7 +423,11 @@ def main():
 
     # Initialize data in session state
     if 'data' not in st.session_state:
-        st.session_state.data = load_data()
+        try:
+            st.session_state.data = load_data()
+        except Exception as e:
+            st.error(f"Failed to initialize data: {e}")
+            return
 
     data = st.session_state.data
 
@@ -448,11 +462,19 @@ def main():
         st.session_state.selected_store = selected_store
         if selected_store != 'Select Store':
             store_id = store_ids.get(selected_store)
-            data = refresh_data(store_id=store_id)
-            st.session_state.data = data  # Update session state with refreshed data
+            try:
+                data = refresh_data(store_id=store_id)
+                st.session_state.data = data  # Update session state with refreshed data
+            except Exception as e:
+                st.error(f"Failed to refresh data: {e}")
+                return
         else:
-            data = load_data()
-            st.session_state.data = data  # Update session state when loading default data
+            try:
+                data = load_data()
+                st.session_state.data = data  # Update session state when loading default data
+            except Exception as e:
+                st.error(f"Failed to load data: {e}")
+                return
     else:
         data = st.session_state.data # Use data from session state
 
@@ -583,3 +605,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+`
