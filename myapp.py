@@ -313,29 +313,19 @@ def save_favorite_wine(wine):
     try:
         if not os.path.exists(favorites_file):
             # Create the file if it doesn't exist
-            df = pd.DataFrame([wine])
-            df.to_csv(favorites_file, index=False, encoding='utf-8-sig')
+            pd.DataFrame([wine]).to_csv(favorites_file, index=False, encoding='utf-8-sig')
             st.success(f"Created favorites.csv and added {wine['title']}!")
         else:
             # Load existing favorites
-            try:
-                favorites = pd.read_csv(favorites_file)
-            except pd.errors.EmptyDataError:
-                # Handle the case where the file is empty
-                favorites = pd.DataFrame()
+            favorites = pd.read_csv(favorites_file)
             # Check if the wine is already in favorites
-            if not favorites.empty and not favorites['title'].str.contains(wine['title'], case=False, na=False).any():
+            if not favorites['title'].str.contains(wine['title'], case=False, na=False).any():
                 # Append the new wine and save
                 favorites = pd.concat([favorites, pd.DataFrame([wine])], ignore_index=True)
                 favorites.to_csv(favorites_file, index=False, encoding='utf-8-sig')
                 st.success(f"Added {wine['title']} to favorites!")
-            elif not favorites.empty:
-                st.warning(f"{wine['title']} is already in your favorites!")
             else:
-                # If favorites is empty, create a new DataFrame with the wine
-                favorites = pd.DataFrame([wine])
-                favorites.to_csv(favorites_file, index=False, encoding='utf-8-sig')
-                st.success(f"Added {wine['title']} to favorites!")
+                st.warning(f"{wine['title']} is already in your favorites!")
 
         # Upload the updated favorites.csv file to GitHub
         try:
