@@ -325,7 +325,11 @@ def save_favorite_wine(wine):
 # -------------------------------
 def upload_to_github(file_path, repo, branch, commit_message):
     import base64  # Import base64 for encoding
-    token = st.secrets["GITHUB_PAT"]  # Retrieve the token from Streamlit Secrets
+    token = st.secrets.get("GITHUB_PAT")  # Retrieve the token from Streamlit Secrets
+    if not token:
+        st.error("GitHub PAT is missing. Please add it to Streamlit secrets.")
+        return
+
     file_name = os.path.basename(file_path)  # Extract the file name
     url = f"https://api.github.com/repos/{repo}/contents/{file_name}"  # Use only the file name in the URL
     headers = {
@@ -346,7 +350,10 @@ def upload_to_github(file_path, repo, branch, commit_message):
 
     # Get the current file SHA (if it exists)
     response = requests.get(url, headers=headers)
-    if response.status_code == 200:
+    if response.status_code == 401:  # Unauthorized
+        st.error("Failed to fetch file info from GitHub: Invalid or expired token.")
+        return
+    elif response.status_code == 200:
         sha = response.json().get("sha")
     elif response.status_code == 404:
         sha = None  # File does not exist yet
