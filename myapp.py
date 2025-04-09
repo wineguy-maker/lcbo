@@ -15,6 +15,9 @@ GITHUB_FAVORITES_PATH = "https://github.com/wineguy-maker/lcbo/blob/e471f608a194
 # -------------------------------
 @st.cache_data
 def load_data():
+    """
+    Load the products.csv file from GitHub and validate its structure.
+    """
     try:
         # Load the products.csv file directly from GitHub, skipping bad lines
         df = pd.read_csv(GITHUB_PRODUCTS_PATH, on_bad_lines='skip')
@@ -35,12 +38,16 @@ def load_data():
 
         st.success("Loaded current products.csv from GitHub.")
         return df
-    except pd.errors.ParserError as e:
-        st.error(f"Failed to load products.csv from GitHub due to a parsing error: {e}")
-        return pd.DataFrame()  # Return an empty DataFrame if parsing fails
     except Exception as e:
         st.error(f"Failed to load products.csv from GitHub: {e}")
         return pd.DataFrame()  # Return an empty DataFrame if loading fails
+
+def initialize_data():
+    """
+    Initialize the data by loading the products.csv file at app launch.
+    """
+    if 'data' not in st.session_state:
+        st.session_state.data = load_data()
 
 def load_food_items():
     try:
@@ -398,33 +405,12 @@ def upload_to_github(file_path, repo, branch, commit_message):
 # -------------------------------
 def main():
     st.title("LCBO Wine Filter")
-    # Add this line to clear the cached data
-    st.cache_data.clear()
-    # Initialize session state for store and image modal trigger
-    if 'selected_store' not in st.session_state:
-        st.session_state.selected_store = 'Select Store'
 
-    # Store Selector
-    store_options = ['Select Store', 'Bradford', 'E. Gwillimbury', 'Upper Canada', 'Yonge & Eg', 'Dufferin & Steeles']
-    store_ids = {
-        "Bradford": "145",
-        "E. Gwillimbury": "391",
-        "Upper Canada": "226",
-        "Yonge & Eg": "457",
-        "Dufferin & Steeles": "618"
-    }
-    selected_store = st.sidebar.selectbox("Store", options=store_options)
+    # Initialize data at app launch
+    initialize_data()
 
-    # Refresh data if store selection changes
-    if selected_store != st.session_state.selected_store:
-        st.session_state.selected_store = selected_store
-        if selected_store != 'Select Store':
-            store_id = store_ids.get(selected_store)
-            data = refresh_data(store_id=store_id)
-        else:
-            data = load_data()
-    else:
-        data = load_data()
+    # Use the loaded data
+    data = st.session_state.data
 
     # Check if data is empty
     if data.empty:
@@ -568,3 +554,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+`
