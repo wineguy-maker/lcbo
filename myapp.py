@@ -308,6 +308,7 @@ def save_favorite_wine(wine):
 # Upload to GitHub
 # -------------------------------
 def upload_to_github(file_path, repo, branch, commit_message):
+    import base64  # Import base64 for encoding
     token = st.secrets["GITHUB_PAT"]  # Retrieve the token from Streamlit Secrets
     url = f"https://api.github.com/repos/{repo}/contents/{file_path}"
     headers = {
@@ -319,6 +320,9 @@ def upload_to_github(file_path, repo, branch, commit_message):
     with open(file_path, "rb") as file:
         content = file.read()
 
+    # Base64 encode the file content
+    encoded_content = base64.b64encode(content).decode("utf-8")
+
     # Get the current file SHA (if it exists)
     response = requests.get(url, headers=headers)
     sha = response.json().get("sha") if response.status_code == 200 else None
@@ -326,7 +330,7 @@ def upload_to_github(file_path, repo, branch, commit_message):
     # Prepare the payload
     payload = {
         "message": commit_message,
-        "content": content.encode("base64").decode("utf-8"),
+        "content": encoded_content,
         "branch": branch
     }
     if sha:
