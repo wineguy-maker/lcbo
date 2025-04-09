@@ -4,67 +4,24 @@ import time
 from datetime import datetime
 import requests
 import re
-import os  # Add import for file path handling
-
-# Update the GitHub path for products.csv
-GITHUB_PRODUCTS_PATH = "https://github.com/wineguy-maker/lcbo/blob/e471f608a1947bfa4e49cf211f1bd884063e58ae/products.csv"
-GITHUB_FAVORITES_PATH = "https://github.com/wineguy-maker/lcbo/blob/e471f608a1947bfa4e49cf211f1bd884063e58ae/favorites.csv"
 
 # -------------------------------
 # Data Handling
 # -------------------------------
 @st.cache_data
-def load_data():
-    """
-    Load the products.csv file from GitHub and validate its structure.
-    """
-    try:
-        # Load the products.csv file directly from GitHub, skipping bad lines
-        df = pd.read_csv(GITHUB_PRODUCTS_PATH, on_bad_lines='skip')
-        # Normalize column names: strip whitespace and convert to lowercase
-        df.columns = df.columns.str.strip().str.lower()
-
-        # Validate required columns
-        required_columns = [
-            'raw_country_of_manufacture', 'raw_lcbo_region_name', 'raw_lcbo_varietal_name',
-            'raw_ec_promo_price', 'raw_sysconcepts', 'stores_inventory', 'title'
-        ]
-        missing_columns = [col for col in required_columns if col not in df.columns]
-        if missing_columns:
-            st.warning(f"The following required columns are missing in the data: {', '.join(missing_columns)}")
-            # Add missing columns with default values
-            for col in missing_columns:
-                df[col] = None
-
-        st.success("Loaded current products.csv from GitHub.")
-        return df
-    except Exception as e:
-        st.error(f"Failed to load products.csv from GitHub: {e}")
-        return pd.DataFrame()  # Return an empty DataFrame if loading fails
-
-def initialize_data():
-    """
-    Initialize the data by loading the products.csv file at app launch.
-    """
-    if 'data' not in st.session_state:
-        st.session_state.data = load_data()
-
+def load_data(file_path):
+    df = pd.read_csv(file_path)
+    return df
+    
 def load_food_items():
     try:
-        # Load the food_items.csv file, skipping bad lines
-        food_items = pd.read_csv('food_items.csv', on_bad_lines='skip')
+        food_items = pd.read_csv('food_items.csv')
         return food_items
-    except pd.errors.ParserError as e:
-        st.error(f"Error loading food_items.csv due to a parsing error: {e}")
-        return pd.DataFrame(columns=['Category', 'FoodItem'])  # Return an empty DataFrame if parsing fails
     except Exception as e:
-        st.error(f"Error loading food_items.csv: {e}")
-        return pd.DataFrame(columns=['Category', 'FoodItem'])  # Return an empty DataFrame if loading fails
+        st.error(f"Error loading food items: {e}")
+        return pd.DataFrame(columns=['Category', 'FoodItem'])
         
 def sort_data(data, column):
-    if column not in data.columns:
-        st.error(f"Sort column '{column}' not found in the data. Defaulting to 'weighted_rating'.")
-        column = 'weighted_rating'
     sorted_data = data.sort_values(by=column, ascending=False)
     return sorted_data
 
@@ -224,7 +181,6 @@ def refresh_data(store_id=None):
                 'raw_created_at': raw_data.get('created_at', 'N/A'),
                 'raw_is_buyable': raw_data.get('is_buyable', 'N/A'),
                 'raw_ec_price': raw_data.get('ec_price', 'N/A'),
-                'raw_ec_promo_price': raw_data.get('ec_promo_price', 'N/A'),
                 'raw_ec_final_price': raw_data.get('ec_final_price', 'N/A'),
                 'raw_lcbo_unit_volume': raw_data.get('lcbo_unit_volume', 'N/A'),
                 'raw_lcbo_alcohol_percent': raw_data.get('lcbo_alcohol_percent', 'N/A'),
@@ -254,9 +210,6 @@ def refresh_data(store_id=None):
         
         df_products = pd.DataFrame(products)
 
-        # Debug: Log the number of products retrieved
-        st.write(f"Retrieved {len(df_products)} products.")
-
         # Calculate mean rating for products with reviews
         valid_reviews = pd.to_numeric(df_products['raw_avg_reviews'], errors='coerce')
         valid_ratings = pd.to_numeric(df_products['raw_ec_rating'], errors='coerce')
@@ -278,140 +231,12 @@ def refresh_data(store_id=None):
             axis=1
         )
 
-        # Save the updated products.csv file locally
-        local_file_path = 'products.csv'
-        df_products.to_csv(local_file_path, index=False, encoding='utf-8-sig')
-
-        # Upload the updated file to GitHub
-        try:
-            repo = "wineguy-maker/lcbo"  # Replace with your GitHub repository
-            branch = "main"  # Replace with your branch name
-            commit_message = f"Updated products.csv on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-            upload_to_github(local_file_path, repo, branch, commit_message)
-            st.success("products.csv file uploaded to GitHub successfully!")
-        except Exception as e:
-            st.error(f"Failed to upload products.csv to GitHub: {e}")
-
-        # Debug: Display the first few rows of the updated file
-
-        # Add a download button for the updated products.csv file
-        csv_data = df_products.to_csv(index=False, encoding='utf-8-sig')
-        st.download_button(
-            label="Download Updated products.csv",
-            data=csv_data,
-            file_name="products.csv",
-            mime="text/csv"
-        )
-
-        return df_products  # Return the updated DataFrame
+        df_products.to_csv('products.csv', index=False, encoding='utf-8-sig')
+        st.success("Data refreshed successfully!")
+        return load_data("products.csv")
     else:
         st.error("Failed to retrieve data from the API.")
         return None
-
-# -------------------------------
-# Save Favorites
-# -------------------------------
-def save_favorite_wine(wine):
-    favorites_file = 'favorites.csv'  # Save locally
-    try:
-        if not os.path.exists(favorites_file):
-            # Create the file if it doesn't exist
-            df = pd.DataFrame([wine])
-            df.to_csv(favorites_file, index=False, encoding='utf-8-sig')
-            st.success(f"Created favorites.csv and added {wine['title']}!")
-        else:
-            # Load existing favorites
-            try:
-                favorites = pd.read_csv(favorites_file)
-            except pd.errors.EmptyDataError:
-                # Handle the case where the file is empty
-                favorites = pd.DataFrame()
-            # Check if the wine is already in favorites
-            if not favorites.empty and not favorites['title'].str.contains(wine['title'], case=False, na=False).any():
-                # Append the new wine and save
-                favorites = pd.concat([favorites, pd.DataFrame([wine])], ignore_index=True)
-                favorites.to_csv(favorites_file, index=False, encoding='utf-8-sig')
-                st.success(f"Added {wine['title']} to favorites!")
-            elif not favorites.empty:
-                st.warning(f"{wine['title']} is already in your favorites!")
-            else:
-                # If favorites is empty, create a new DataFrame with the wine
-                favorites = pd.DataFrame([wine])
-                favorites.to_csv(favorites_file, index=False, encoding='utf-8-sig')
-                st.success(f"Added {wine['title']} to favorites!")
-
-        # Upload the updated favorites.csv file to GitHub
-        try:
-            repo = "wineguy-maker/lcbo"  # Replace with your GitHub repository
-            branch = "main"  # Replace with your branch name
-            commit_message = f"Updated favorites.csv on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-            upload_to_github(favorites_file, repo, branch, commit_message)
-            st.success("favorites.csv file uploaded to GitHub successfully!")
-        except Exception as e:
-            st.error(f"Failed to upload favorites.csv to GitHub: {e}")
-
-    except Exception as e:
-        st.error(f"Failed to save favorite wine: {e}")
-
-# -------------------------------
-# Upload to GitHub
-# -------------------------------
-def upload_to_github(file_path, repo, branch, commit_message):
-    import base64  # Import base64 for encoding
-    token = st.secrets.get("GITHUB_PAT")  # Retrieve the token from Streamlit Secrets
-    if not token:
-        st.error("GitHub PAT is missing. Please add it to Streamlit secrets.")
-        return
-
-    # Validate the token by checking the user's GitHub profile
-    headers = {
-        "Authorization": f"token {token}",
-        "Accept": "application/vnd.github.v3+json"
-    }
-    user_response = requests.get("https://api.github.com/user", headers=headers)
-    if user_response.status_code != 200:
-        st.error("Invalid or expired GitHub PAT. Please update it in Streamlit secrets.")
-        return
-
-    file_name = os.path.basename(file_path)  # Extract the file name
-    url = f"https://api.github.com/repos/{repo}/contents/{file_name}"  # Use only the file name in the URL
-
-    # Read the file content
-    try:
-        with open(file_path, "rb") as file:
-            content = file.read()
-    except FileNotFoundError:
-        st.error(f"File not found: {file_path}")
-        return
-
-    # Base64 encode the file content
-    encoded_content = base64.b64encode(content).decode("utf-8")
-
-    # Get the current file SHA (if it exists)
-    response = requests.get(url, headers=headers)
-    if response.status_code == 200:
-        sha = response.json().get("sha")
-    elif response.status_code == 404:
-        sha = None  # File does not exist yet
-    else:
-        st.error(f"Failed to fetch file info from GitHub: {response.json()}")
-        return
-
-    # Prepare the payload
-    payload = {
-        "message": commit_message,
-        "content": encoded_content,
-        "branch": branch
-    }
-    if sha:
-        payload["sha"] = sha
-
-    # Upload the file
-    response = requests.put(url, headers=headers, json=payload)
-    if response.status_code in [200, 201]:
-        st.success(f"File '{file_name}' uploaded successfully to GitHub!")
-    else:
-        st.error(f"Failed to upload file to GitHub: {response.json()}")
 
 # -------------------------------
 # Main Streamlit App
@@ -423,31 +248,6 @@ def main():
     # Initialize session state for store and image modal trigger
     if 'selected_store' not in st.session_state:
         st.session_state.selected_store = 'Select Store'
-
-    # Initialize data in session state
-    if 'data' not in st.session_state:
-        try:
-            st.session_state.data = load_data()
-        except Exception as e:
-            st.error(f"Failed to initialize data: {e}")
-            return
-
-    data = st.session_state.data
-
-    # Check if data is empty
-    if data.empty:
-        st.error("The products.csv file is empty or could not be loaded. Please refresh the data.")
-        return
-
-    # Validate required columns
-    required_columns = [
-        'raw_country_of_manufacture', 'raw_lcbo_region_name', 'raw_lcbo_varietal_name',
-        'raw_ec_promo_price', 'raw_sysconcepts', 'stores_inventory', 'title'
-    ]
-    missing_columns = [col for col in required_columns if col not in data.columns]
-    if missing_columns:
-        st.error(f"The following required columns are missing in the data: {', '.join(missing_columns)}")
-        return
 
     # Store Selector
     store_options = ['Select Store', 'Bradford', 'E. Gwillimbury', 'Upper Canada', 'Yonge & Eg', 'Dufferin & Steeles']
@@ -465,21 +265,11 @@ def main():
         st.session_state.selected_store = selected_store
         if selected_store != 'Select Store':
             store_id = store_ids.get(selected_store)
-            try:
-                data = refresh_data(store_id=store_id)
-                st.session_state.data = data  # Update session state with refreshed data
-            except Exception as e:
-                st.error(f"Failed to refresh data: {e}")
-                return
+            data = refresh_data(store_id=store_id)
         else:
-            try:
-                data = load_data()
-                st.session_state.data = data  # Update session state when loading default data
-            except Exception as e:
-                st.error(f"Failed to load data: {e}")
-                return
+            data = load_data("products.csv")
     else:
-        data = st.session_state.data # Use data from session state
+        data = load_data("products.csv")
 
     # Sidebar Filters with improved header
     st.sidebar.header("Filter Options 🔍")
@@ -487,7 +277,6 @@ def main():
     sort_by = st.sidebar.selectbox("Sort by",
                                    ['Sort by', '# of reviews', 'Rating', 'Top Veiwed - Year', 'Top Veiwed - Month', 'Top Seller - Year',
                                     'Top Seller - Month'])
-    
     
     # Create filter options from data
     
@@ -509,18 +298,13 @@ def main():
     exclude_usa = st.sidebar.checkbox("Exclude USA", value=False)
     in_stock = st.sidebar.checkbox("In Stock Only", value=False)
     only_vintages = st.sidebar.checkbox("Only Vintages", value=False)
-    # Add "Only On Sale" checkbox
-    only_on_sale = st.sidebar.checkbox("Only On Sale", value=False)
+
    
     # Apply Filters and Sorting
     filtered_data = data.copy()
     filtered_data = filter_data(filtered_data, country=country, region=region, varietal=varietal, exclude_usa=exclude_usa,
                                 in_stock=in_stock, only_vintages=only_vintages)
     filtered_data = search_data(filtered_data, search_text)
-
-    # Apply "Only On Sale" filter
-    if only_on_sale:
-        filtered_data = filtered_data[pd.notna(filtered_data['raw_ec_promo_price']) & (filtered_data['raw_ec_promo_price'] != 'N/A')]
 
      # Food Category Filtering
     if food_category != 'All Dishes':
@@ -530,12 +314,6 @@ def main():
         )]
 
     sort_option = sort_by if sort_by != 'Sort by' else 'weighted_rating'
-
-    # Validate sort_option against available columns
-    if sort_option not in filtered_data.columns:
-        st.error(f"Sort column '{sort_option}' not found in the data. Defaulting to 'weighted_rating'.")
-        sort_option = 'weighted_rating'
-
     if sort_option != 'weighted_rating':
         filtered_data = sort_data_filter(filtered_data, sort_option)
     else:
@@ -558,17 +336,8 @@ def main():
     # Display Products
     for idx, row in page_data.iterrows():
         st.markdown(f"### {row['title']}")
-        if pd.notna(row.get('raw_ec_promo_price')) and row['raw_ec_promo_price'] != 'N/A':
-            st.markdown(f"**Price:** ~~${row['raw_ec_price']}~~ ${row['raw_ec_promo_price']}")
-        else:
-            st.markdown(f"**Price:** ${row['raw_ec_price']}")
-        st.markdown(f"**Rating:** {row.get('raw_ec_rating', 'N/A')} | **Reviews:** {row.get('raw_avg_reviews', 'N/A')}")
-
-        # Add a heart icon to favorite the wine
-        if st.button(f"❤️ Favorite {row['title']}", key=f"favorite_{idx}"):
-            save_favorite_wine(row.to_dict())
-            st.success(f"Added {row['title']} to favorites!")
-
+        st.markdown(f"**Price:** ${row.get('raw_ec_price', 'N/A')} | **Rating:** {row.get('raw_ec_rating', 'N/A')} | **Reviews:** {row.get('raw_avg_reviews', 'N/A')}")
+        
         # Display the thumbnail image
         thumbnail_url = row.get('raw_ec_thumbnails', None)
         if pd.notna(thumbnail_url) and thumbnail_url != 'N/A':
@@ -596,10 +365,7 @@ def main():
             st.markdown(f"**Type:** {row['raw_lcbo_varietal_name']}")
             st.markdown(f"**Size:** {row['raw_lcbo_unit_volume']}")
             st.markdown(f"**Description:** {row['raw_ec_shortdesc']}")
-            if pd.notna(row.get('raw_ec_promo_price')) and row['raw_ec_promo_price'] != 'N/A':
-                st.markdown(f"**Price:** ~~${row['raw_ec_price']}~~ ${row['raw_ec_promo_price']}")
-            else:
-                st.markdown(f"**Price:** ${row['raw_ec_price']}")
+            st.markdown(f"**Price:** {row['raw_ec_price']}")
             st.markdown(f"**Rating:** {row['raw_ec_rating']}")
             st.markdown(f"**Reviews:** {row['raw_avg_reviews']}")
             st.markdown(f"**Store Inventory:** {row['stores_inventory']}")
