@@ -7,8 +7,8 @@ import re
 import os  # Add import for file path handling
 
 # Update the GitHub path for products.csv
-GITHUB_PRODUCTS_PATH = "https://github.com/wineguy-maker/lcbo/blob/main/products.csv"
-GITHUB_FAVORITES_PATH = "https://github.com/wineguy-maker/lcbo/blob/main/favorites.csv"
+GITHUB_PRODUCTS_PATH = "https://github.com/wineguy-maker/lcbo/blob/e471f608a1947bfa4e49cf211f1bd884063e58ae/products.csv"
+GITHUB_FAVORITES_PATH = "https://github.com/wineguy-maker/lcbo/blob/e471f608a1947bfa4e49cf211f1bd884063e58ae/favorites.csv"
 
 # -------------------------------
 # Data Handling
@@ -216,6 +216,9 @@ def refresh_data(store_id=None):
         
         df_products = pd.DataFrame(products)
 
+        # Debug: Log the number of products retrieved
+        st.write(f"Retrieved {len(df_products)} products.")
+
         # Calculate mean rating for products with reviews
         valid_reviews = pd.to_numeric(df_products['raw_avg_reviews'], errors='coerce')
         valid_ratings = pd.to_numeric(df_products['raw_ec_rating'], errors='coerce')
@@ -237,8 +240,14 @@ def refresh_data(store_id=None):
             axis=1
         )
 
-        df_products.to_csv('products.csv', index=False, encoding='utf-8-sig')  # Save locally
+        # Save the updated products.csv file
+        df_products.to_csv('products.csv', index=False, encoding='utf-8-sig')
         st.success("Data refreshed successfully!")
+
+        # Debug: Display the first few rows of the updated file
+        st.write("Updated products.csv preview:")
+        st.dataframe(df_products.head())
+
         return load_data('products.csv')  # Load from local file
     else:
         st.error("Failed to retrieve data from the API.")
