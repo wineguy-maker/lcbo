@@ -330,12 +330,18 @@ def upload_to_github(file_path, repo, branch, commit_message):
         st.error("GitHub PAT is missing. Please add it to Streamlit secrets.")
         return
 
-    file_name = os.path.basename(file_path)  # Extract the file name
-    url = f"https://api.github.com/repos/{repo}/contents/{file_name}"  # Use only the file name in the URL
+    # Validate the token by checking the user's GitHub profile
     headers = {
         "Authorization": f"token {token}",
         "Accept": "application/vnd.github.v3+json"
     }
+    user_response = requests.get("https://api.github.com/user", headers=headers)
+    if user_response.status_code != 200:
+        st.error("Invalid or expired GitHub PAT. Please update it in Streamlit secrets.")
+        return
+
+    file_name = os.path.basename(file_path)  # Extract the file name
+    url = f"https://api.github.com/repos/{repo}/contents/{file_name}"  # Use only the file name in the URL
 
     # Read the file content
     try:
@@ -350,10 +356,7 @@ def upload_to_github(file_path, repo, branch, commit_message):
 
     # Get the current file SHA (if it exists)
     response = requests.get(url, headers=headers)
-    if response.status_code == 401:  # Unauthorized
-        st.error("Failed to fetch file info from GitHub: Invalid or expired token.")
-        return
-    elif response.status_code == 200:
+    if response.status_code == 200:
         sha = response.json().get("sha")
     elif response.status_code == 404:
         sha = None  # File does not exist yet
