@@ -62,6 +62,9 @@ def load_food_items():
         return pd.DataFrame(columns=['Category', 'FoodItem'])  # Return an empty DataFrame if loading fails
         
 def sort_data(data, column):
+    if column not in data.columns:
+        st.error(f"Sort column '{column}' not found in the data. Defaulting to 'weighted_rating'.")
+        column = 'weighted_rating'
     sorted_data = data.sort_values(by=column, ascending=False)
     return sorted_data
 
@@ -527,6 +530,12 @@ def main():
         )]
 
     sort_option = sort_by if sort_by != 'Sort by' else 'weighted_rating'
+
+    # Validate sort_option against available columns
+    if sort_option not in filtered_data.columns:
+        st.error(f"Sort column '{sort_option}' not found in the data. Defaulting to 'weighted_rating'.")
+        sort_option = 'weighted_rating'
+
     if sort_option != 'weighted_rating':
         filtered_data = sort_data_filter(filtered_data, sort_option)
     else:
