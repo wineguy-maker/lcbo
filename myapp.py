@@ -18,6 +18,8 @@ def load_data():
     try:
         # Load the products.csv file directly from GitHub, skipping bad lines
         df = pd.read_csv(GITHUB_PRODUCTS_PATH, on_bad_lines='skip')
+        # Normalize column names: strip whitespace and convert to lowercase
+        df.columns = df.columns.str.strip().str.lower()
         st.success("Loaded current products.csv from GitHub.")
         return df
     except pd.errors.ParserError as e:
@@ -389,6 +391,21 @@ def main():
             data = load_data()
     else:
         data = load_data()
+
+    # Check if data is empty
+    if data.empty:
+        st.error("The products.csv file is empty or could not be loaded. Please refresh the data.")
+        return
+
+    # Validate required columns
+    required_columns = [
+        'raw_country_of_manufacture', 'raw_lcbo_region_name', 'raw_lcbo_varietal_name',
+        'raw_ec_promo_price', 'raw_sysconcepts', 'stores_inventory', 'title'
+    ]
+    missing_columns = [col for col in required_columns if col not in data.columns]
+    if missing_columns:
+        st.error(f"The following required columns are missing in the data: {', '.join(missing_columns)}")
+        return
 
     # Sidebar Filters with improved header
     st.sidebar.header("Filter Options 🔍")
