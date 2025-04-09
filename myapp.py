@@ -16,21 +16,28 @@ GITHUB_FAVORITES_PATH = "https://github.com/wineguy-maker/lcbo/blob/e471f608a194
 @st.cache_data
 def load_data():
     try:
-        # Load the products.csv file directly from GitHub
-        df = pd.read_csv(GITHUB_PRODUCTS_PATH)
+        # Load the products.csv file directly from GitHub, skipping bad lines
+        df = pd.read_csv(GITHUB_PRODUCTS_PATH, on_bad_lines='skip')
         st.success("Loaded current products.csv from GitHub.")
         return df
+    except pd.errors.ParserError as e:
+        st.error(f"Failed to load products.csv from GitHub due to a parsing error: {e}")
+        return pd.DataFrame()  # Return an empty DataFrame if parsing fails
     except Exception as e:
         st.error(f"Failed to load products.csv from GitHub: {e}")
         return pd.DataFrame()  # Return an empty DataFrame if loading fails
 
 def load_food_items():
     try:
-        food_items = pd.read_csv('food_items.csv')
+        # Load the food_items.csv file, skipping bad lines
+        food_items = pd.read_csv('food_items.csv', on_bad_lines='skip')
         return food_items
+    except pd.errors.ParserError as e:
+        st.error(f"Error loading food_items.csv due to a parsing error: {e}")
+        return pd.DataFrame(columns=['Category', 'FoodItem'])  # Return an empty DataFrame if parsing fails
     except Exception as e:
-        st.error(f"Error loading food items: {e}")
-        return pd.DataFrame(columns=['Category', 'FoodItem'])
+        st.error(f"Error loading food_items.csv: {e}")
+        return pd.DataFrame(columns=['Category', 'FoodItem'])  # Return an empty DataFrame if loading fails
         
 def sort_data(data, column):
     sorted_data = data.sort_values(by=column, ascending=False)
