@@ -261,8 +261,15 @@ def refresh_data(store_id=None):
             st.error(f"Failed to upload products.csv to GitHub: {e}")
 
         # Debug: Display the first few rows of the updated file
-        st.write("Updated products.csv preview:")
-        st.dataframe(df_products.head())
+
+        # Add a download button for the updated products.csv file
+        csv_data = df_products.to_csv(index=False, encoding='utf-8-sig')
+        st.download_button(
+            label="Download Updated products.csv",
+            data=csv_data,
+            file_name="products.csv",
+            mime="text/csv"
+        )
 
         return df_products  # Return the updated DataFrame
     else:
