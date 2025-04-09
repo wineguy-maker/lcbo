@@ -405,11 +405,16 @@ def upload_to_github(file_path, repo, branch, commit_message):
 # -------------------------------
 def main():
     st.title("LCBO Wine Filter")
+    # Add this line to clear the cached data
+    st.cache_data.clear()
+    # Initialize session state for store and image modal trigger
+    if 'selected_store' not in st.session_state:
+        st.session_state.selected_store = 'Select Store'
 
-    # Initialize data at app launch
-    initialize_data()
+    # Initialize data in session state
+    if 'data' not in st.session_state:
+        st.session_state.data = load_data()
 
-    # Use the loaded data
     data = st.session_state.data
 
     # Check if data is empty
@@ -426,6 +431,30 @@ def main():
     if missing_columns:
         st.error(f"The following required columns are missing in the data: {', '.join(missing_columns)}")
         return
+
+    # Store Selector
+    store_options = ['Select Store', 'Bradford', 'E. Gwillimbury', 'Upper Canada', 'Yonge & Eg', 'Dufferin & Steeles']
+    store_ids = {
+        "Bradford": "145",
+        "E. Gwillimbury": "391",
+        "Upper Canada": "226",
+        "Yonge & Eg": "457",
+        "Dufferin & Steeles": "618"
+    }
+    selected_store = st.sidebar.selectbox("Store", options=store_options)
+
+    # Refresh data if store selection changes
+    if selected_store != st.session_state.selected_store:
+        st.session_state.selected_store = selected_store
+        if selected_store != 'Select Store':
+            store_id = store_ids.get(selected_store)
+            data = refresh_data(store_id=store_id)
+            st.session_state.data = data  # Update session state with refreshed data
+        else:
+            data = load_data()
+            st.session_state.data = data  # Update session state when loading default data
+    else:
+        data = st.session_state.data # Use data from session state
 
     # Sidebar Filters with improved header
     st.sidebar.header("Filter Options 🔍")
@@ -554,4 +583,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-`
