@@ -14,10 +14,16 @@ GITHUB_FAVORITES_PATH = "https://github.com/wineguy-maker/lcbo/blob/e471f608a194
 # Data Handling
 # -------------------------------
 @st.cache_data
-def load_data(file_path):
-    df = pd.read_csv(file_path)
-    return df
-    
+def load_data():
+    try:
+        # Load the products.csv file directly from GitHub
+        df = pd.read_csv(GITHUB_PRODUCTS_PATH)
+        st.success("Loaded current products.csv from GitHub.")
+        return df
+    except Exception as e:
+        st.error(f"Failed to load products.csv from GitHub: {e}")
+        return pd.DataFrame()  # Return an empty DataFrame if loading fails
+
 def load_food_items():
     try:
         food_items = pd.read_csv('food_items.csv')
@@ -240,12 +246,25 @@ def refresh_data(store_id=None):
             axis=1
         )
 
-        # Save the updated products.csv file
-        df_products.to_csv('products.csv', index=False, encoding='utf-8-sig')
-        st.success("Data refreshed successfully!")
+        # Save the updated products.csv file locally
+        local_file_path = 'products.csv'
+        df_products.to_csv(local_file_path, index=False, encoding='utf-8-sig')
 
+        # Upload the updated file to GitHub
+        try:
+            repo = "wineguy-maker/lcbo"  # Replace with your GitHub repository
+            branch = "main"  # Replace with your branch name
+            commit_message = f"Updated products.csv on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            upload_to_github(local_file_path, repo, branch, commit_message)
+            st.success("products.csv file uploaded to GitHub successfully!")
+        except Exception as e:
+            st.error(f"Failed to upload products.csv to GitHub: {e}")
 
-        return load_data('products.csv')  # Load from local file
+        # Debug: Display the first few rows of the updated file
+        st.write("Updated products.csv preview:")
+        st.dataframe(df_products.head())
+
+        return df_products  # Return the updated DataFrame
     else:
         st.error("Failed to retrieve data from the API.")
         return None
@@ -255,15 +274,35 @@ def refresh_data(store_id=None):
 # -------------------------------
 def save_favorite_wine(wine):
     favorites_file = 'favorites.csv'  # Save locally
-    if not os.path.exists(favorites_file):
-        pd.DataFrame([wine]).to_csv(favorites_file, index=False, encoding='utf-8-sig')
-    else:
-        favorites = pd.read_csv(favorites_file)
-        if not favorites['title'].str.contains(wine['title']).any():
-            favorites = pd.concat([favorites, pd.DataFrame([wine])], ignore_index=True)
-            favorites.to_csv(favorites_file, index=False, encoding='utf-8-sig')
+    try:
+        if not os.path.exists(favorites_file):
+            # Create the file if it doesn't exist
+            pd.DataFrame([wine]).to_csv(favorites_file, index=False, encoding='utf-8-sig')
+            st.success(f"Created favorites.csv and added {wine['title']}!")
         else:
-            st.warning("This wine is already in your favorites!")
+            # Load existing favorites
+            favorites = pd.read_csv(favorites_file)
+            # Check if the wine is already in favorites
+            if not favorites['title'].str.contains(wine['title'], case=False, na=False).any():
+                # Append the new wine and save
+                favorites = pd.concat([favorites, pd.DataFrame([wine])], ignore_index=True)
+                favorites.to_csv(favorites_file, index=False, encoding='utf-8-sig')
+                st.success(f"Added {wine['title']} to favorites!")
+            else:
+                st.warning(f"{wine['title']} is already in your favorites!")
+
+        # Upload the updated favorites.csv file to GitHub
+        try:
+            repo = "wineguy-maker/lcbo"  # Replace with your GitHub repository
+            branch = "main"  # Replace with your branch name
+            commit_message = f"Updated favorites.csv on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            upload_to_github(favorites_file, repo, branch, commit_message)
+            st.success("favorites.csv file uploaded to GitHub successfully!")
+        except Exception as e:
+            st.error(f"Failed to upload favorites.csv to GitHub: {e}")
+
+    except Exception as e:
+        st.error(f"Failed to save favorite wine: {e}")
 
 # -------------------------------
 # Upload to GitHub
@@ -329,9 +368,9 @@ def main():
             store_id = store_ids.get(selected_store)
             data = refresh_data(store_id=store_id)
         else:
-            data = load_data("products.csv")
+            data = load_data()
     else:
-        data = load_data("products.csv")
+        data = load_data()
 
     # Sidebar Filters with improved header
     st.sidebar.header("Filter Options 🔍")
