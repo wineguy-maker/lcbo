@@ -4,6 +4,11 @@ import time
 from datetime import datetime
 import requests
 import re
+import os  # Add import for file path handling
+
+# Update the GitHub path for products.csv
+GITHUB_PRODUCTS_PATH = "https://github.com/wineguy-maker/lcbo/blob/main/products.csv"
+GITHUB_FAVORITES_PATH = "https://github.com/wineguy-maker/lcbo/blob/main/favorites.csv"
 
 # -------------------------------
 # Data Handling
@@ -181,6 +186,7 @@ def refresh_data(store_id=None):
                 'raw_created_at': raw_data.get('created_at', 'N/A'),
                 'raw_is_buyable': raw_data.get('is_buyable', 'N/A'),
                 'raw_ec_price': raw_data.get('ec_price', 'N/A'),
+                'raw_ec_promo_price': raw_data.get('ec_promo_price', 'N/A'),
                 'raw_ec_final_price': raw_data.get('ec_final_price', 'N/A'),
                 'raw_lcbo_unit_volume': raw_data.get('lcbo_unit_volume', 'N/A'),
                 'raw_lcbo_alcohol_percent': raw_data.get('lcbo_alcohol_percent', 'N/A'),
@@ -231,12 +237,62 @@ def refresh_data(store_id=None):
             axis=1
         )
 
-        df_products.to_csv('products.csv', index=False, encoding='utf-8-sig')
+        df_products.to_csv('products.csv', index=False, encoding='utf-8-sig')  # Save locally
         st.success("Data refreshed successfully!")
-        return load_data("products.csv")
+        return load_data('products.csv')  # Load from local file
     else:
         st.error("Failed to retrieve data from the API.")
         return None
+
+# -------------------------------
+# Save Favorites
+# -------------------------------
+def save_favorite_wine(wine):
+    favorites_file = 'favorites.csv'  # Save locally
+    if not os.path.exists(favorites_file):
+        pd.DataFrame([wine]).to_csv(favorites_file, index=False, encoding='utf-8-sig')
+    else:
+        favorites = pd.read_csv(favorites_file)
+        if not favorites['title'].str.contains(wine['title']).any():
+            favorites = pd.concat([favorites, pd.DataFrame([wine])], ignore_index=True)
+            favorites.to_csv(favorites_file, index=False, encoding='utf-8-sig')
+        else:
+            st.warning("This wine is already in your favorites!")
+
+# -------------------------------
+# Upload to GitHub
+# -------------------------------
+def upload_to_github(file_path, repo, branch, commit_message):
+    token = os.getenv("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")  # Set the PAT in your environment variables
+    url = f"https://api.github.com/repos/{repo}/contents/{file_path}"
+    headers = {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+
+    # Read the file content
+    with open(file_path, "rb") as file:
+        content = file.read()
+
+    # Get the current file SHA (if it exists)
+    response = requests.get(url, headers=headers)
+    sha = response.json().get("sha") if response.status_code == 200 else None
+
+    # Prepare the payload
+    payload = {
+        "message": commit_message,
+        "content": content.encode("base64").decode("utf-8"),
+        "branch": branch
+    }
+    if sha:
+        payload["sha"] = sha
+
+    # Upload the file
+    response = requests.put(url, headers=headers, json=payload)
+    if response.status_code in [200, 201]:
+        print("File uploaded successfully!")
+    else:
+        print(f"Failed to upload file: {response.json()}")
 
 # -------------------------------
 # Main Streamlit App
@@ -277,6 +333,8 @@ def main():
     sort_by = st.sidebar.selectbox("Sort by",
                                    ['Sort by', '# of reviews', 'Rating', 'Top Veiwed - Year', 'Top Veiwed - Month', 'Top Seller - Year',
                                     'Top Seller - Month'])
+    # Add "Only On Sale" checkbox
+    only_on_sale = st.sidebar.checkbox("Only On Sale", value=False)
     
     # Create filter options from data
     
@@ -305,6 +363,10 @@ def main():
     filtered_data = filter_data(filtered_data, country=country, region=region, varietal=varietal, exclude_usa=exclude_usa,
                                 in_stock=in_stock, only_vintages=only_vintages)
     filtered_data = search_data(filtered_data, search_text)
+
+    # Apply "Only On Sale" filter
+    if only_on_sale:
+        filtered_data = filtered_data[pd.notna(filtered_data['raw_ec_promo_price']) & (filtered_data['raw_ec_promo_price'] != 'N/A')]
 
      # Food Category Filtering
     if food_category != 'All Dishes':
@@ -336,8 +398,17 @@ def main():
     # Display Products
     for idx, row in page_data.iterrows():
         st.markdown(f"### {row['title']}")
-        st.markdown(f"**Price:** ${row.get('raw_ec_price', 'N/A')} | **Rating:** {row.get('raw_ec_rating', 'N/A')} | **Reviews:** {row.get('raw_avg_reviews', 'N/A')}")
-        
+        if pd.notna(row.get('raw_ec_promo_price')) and row['raw_ec_promo_price'] != 'N/A':
+            st.markdown(f"**Price:** ~~${row['raw_ec_price']}~~ ${row['raw_ec_promo_price']}")
+        else:
+            st.markdown(f"**Price:** ${row['raw_ec_price']}")
+        st.markdown(f"**Rating:** {row.get('raw_ec_rating', 'N/A')} | **Reviews:** {row.get('raw_avg_reviews', 'N/A')}")
+
+        # Add a heart icon to favorite the wine
+        if st.button(f"❤️ Favorite {row['title']}", key=f"favorite_{idx}"):
+            save_favorite_wine(row.to_dict())
+            st.success(f"Added {row['title']} to favorites!")
+
         # Display the thumbnail image
         thumbnail_url = row.get('raw_ec_thumbnails', None)
         if pd.notna(thumbnail_url) and thumbnail_url != 'N/A':
@@ -365,7 +436,10 @@ def main():
             st.markdown(f"**Type:** {row['raw_lcbo_varietal_name']}")
             st.markdown(f"**Size:** {row['raw_lcbo_unit_volume']}")
             st.markdown(f"**Description:** {row['raw_ec_shortdesc']}")
-            st.markdown(f"**Price:** {row['raw_ec_price']}")
+            if pd.notna(row.get('raw_ec_promo_price')) and row['raw_ec_promo_price'] != 'N/A':
+                st.markdown(f"**Price:** ~~${row['raw_ec_price']}~~ ${row['raw_ec_promo_price']}")
+            else:
+                st.markdown(f"**Price:** ${row['raw_ec_price']}")
             st.markdown(f"**Rating:** {row['raw_ec_rating']}")
             st.markdown(f"**Reviews:** {row['raw_avg_reviews']}")
             st.markdown(f"**Store Inventory:** {row['stores_inventory']}")
