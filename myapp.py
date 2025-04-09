@@ -47,7 +47,11 @@ def initialize_data():
     Initialize the data by loading the products.csv file at app launch.
     """
     if 'data' not in st.session_state:
-        st.session_state.data = load_data()
+        try:
+            st.session_state.data = load_data()
+        except Exception as e:
+            st.error(f"Failed to initialize data: {e}")
+            st.session_state.data = pd.DataFrame()
 
 def load_food_items():
     try:
@@ -423,7 +427,11 @@ def main():
 
     # Initialize data in session state
     if 'data' not in st.session_state:
-        st.session_state.data = load_data()
+        try:
+            st.session_state.data = load_data()
+        except Exception as e:
+            st.error(f"Failed to initialize data: {e}")
+            return
 
     data = st.session_state.data
 
@@ -458,11 +466,19 @@ def main():
         st.session_state.selected_store = selected_store
         if selected_store != 'Select Store':
             store_id = store_ids.get(selected_store)
-            data = refresh_data(store_id=store_id)
-            st.session_state.data = data  # Update session state with refreshed data
+            try:
+                data = refresh_data(store_id=store_id)
+                st.session_state.data = data  # Update session state with refreshed data
+            except Exception as e:
+                st.error(f"Failed to refresh data: {e}")
+                return
         else:
-            data = load_data()
-            st.session_state.data = data  # Update session state when loading default data
+            try:
+                data = load_data()
+                st.session_state.data = data  # Update session state when loading default data
+            except Exception as e:
+                st.error(f"Failed to load data: {e}")
+                return
     else:
         data = st.session_state.data # Use data from session state
 
@@ -593,3 +609,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
