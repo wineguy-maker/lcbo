@@ -368,11 +368,9 @@ def refresh_data(store_id=None):
                 st.error(f"Key 'results' not found in the response during pagination. Response: {data}")
             time.sleep(1)  # Avoid hitting the server too frequently
 
-        
         products = []
         for product in all_items:
             raw_data = product['raw']
-            
             product_info = {
                 'title': product.get('title', 'N/A'),
                 'uri': product.get('uri', 'N/A'),
@@ -413,34 +411,28 @@ def refresh_data(store_id=None):
             products.append(product_info)
 
         # Create a temporary DataFrame for immediate display
-        df_products = pd.DataFrame(products)
-        # Calculate mean rating for products with reviews
-        valid_reviews = pd.to_numeric(df_products['raw_avg_reviews'], errors='coerce')
-        valid_ratings = pd.to_numeric(df_products['raw_ec_rating'], errors='coerce')
-        mean_rating = valid_ratings[valid_reviews > 0].mean()
-        minimum_votes = 10  # Minimum number of votes required
-        
-        def weighted_rating(R, v, m, C):
-            # Calculate IMDb-style weighted rating
-            return (v / (v + m)) * R + (m / (v + m)) * C
+        temp_df = pd.DataFrame(products)
 
-        # Compute weighted rating using numeric conversion
-        df_products['weighted_rating'] = df_products.apply(
-            lambda x: weighted_rating(
-                float(x['raw_ec_rating']) if pd.notna(x['raw_ec_rating']) and x['raw_ec_rating'] != 'N/A' else 0,
-                float(x['raw_avg_reviews']) if pd.notna(x['raw_avg_reviews']) and x['raw_avg_reviews'] != 'N/A' else 0,
-                minimum_votes,
-                mean_rating if not pd.isna(mean_rating) else 0
-            ),
-            axis=1
-        )
+        # Start a background thread to update Supabase
+        def update_supabase():
+            # Delete all existing records in the Products table
+            try:
+                supabase.table(PRODUCTS_TABLE).delete().neq("id", 0).execute()
+                st.info("Products table cleared.")
+            except Exception as e:
+                st.error(f"Failed to clear Products table: {e}")
+                return
 
+            # Add new records with today's date
+            for product in products:
+                product["Date"] = today_str
+                supabase_upsert_record(PRODUCTS_TABLE, product)
+            st.info("Products table updated with new data.")
 
-        # Start background thread for updates
-        threading.Thread(target=background_update, args=(products, today_str), daemon=True).start()
+        threading.Thread(target=update_supabase, daemon=True).start()
 
-        st.success("Data loaded! Background updates are in progress.")
-        return df_products
+        st.success("Data loaded! Supabase updates are in progress.")
+        return temp_df
     else:
         st.error("Failed to retrieve data from the API.")
         return None
