@@ -32,7 +32,7 @@ GITHUB_HEADERS = {
 
 def get_github_file_content(owner, repo, path, headers):
     """Gets the content and SHA of a file from GitHub."""
-    url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}"
+    url = f"https://api.github.com/repos/{owner}/{repo}/blob/{path}"
     try:
         response = requests.get(url, headers=headers)
         response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
