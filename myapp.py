@@ -4,6 +4,7 @@ import time
 from datetime import datetime
 import requests
 import re
+import json
 
 # -------------------------------
 # Data Handling
@@ -241,6 +242,33 @@ def refresh_data(store_id=None):
         return None
 
 # -------------------------------
+# Favourites Handling
+# -------------------------------
+FAVOURITES_FILE = "favourites.json"
+
+def load_favourites():
+    """Load favourites from the JSON file."""
+    try:
+        with open(FAVOURITES_FILE, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return []
+
+def save_favourites(favourites):
+    """Save favourites to the JSON file."""
+    with open(FAVOURITES_FILE, "w") as f:
+        json.dump(favourites, f)
+
+def toggle_favourite(wine_id):
+    """Toggle the favourite status of a wine."""
+    favourites = load_favourites()
+    if wine_id in favourites:
+        favourites.remove(wine_id)  # Unfavourite
+    else:
+        favourites.append(wine_id)  # Favourite
+    save_favourites(favourites)
+
+# -------------------------------
 # Main Streamlit App
 # -------------------------------
 def main():
@@ -301,7 +329,10 @@ def main():
     in_stock = st.sidebar.checkbox("In Stock Only", value=False)
     only_vintages = st.sidebar.checkbox("Only Vintages", value=False)
     only_sale_items = st.sidebar.checkbox("Only Sale Items", value=False)
+    only_favourites = st.sidebar.checkbox("Only Favourites", value=False)
 
+    # Load favourites
+    favourites = load_favourites()
    
     # Apply Filters and Sorting
     filtered_data = data.copy()
@@ -312,6 +343,10 @@ def main():
     # Apply "Only Sale Items" filter
     if only_sale_items:
         filtered_data = filtered_data[filtered_data['raw_ec_promo_price'].notna() & (filtered_data['raw_ec_promo_price'] != 'N/A')]
+
+    # Apply "Only Favourites" filter
+    if only_favourites:
+        filtered_data = filtered_data[filtered_data['id'].isin(favourites)]
 
     # Food Category Filtering
     if food_category != 'All Dishes':
@@ -345,6 +380,14 @@ def main():
         st.markdown(f"### {row['title']}")
         promo_price = row.get('raw_ec_promo_price', None)
         regular_price = row.get('raw_ec_price', 'N/A')
+
+        # Favourite button
+        wine_id = row['id']  # Assuming each wine has a unique 'id'
+        is_favourite = wine_id in favourites
+        heart_icon = "❤️" if is_favourite else "🤍"
+        if st.button(f"{heart_icon} Favourite", key=f"fav-{wine_id}"):
+            toggle_favourite(wine_id)
+            st.experimental_rerun()  # Refresh the page to update the UI
 
         # Raw SVG data for the sale icon
         sale_icon_svg = """
