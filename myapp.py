@@ -348,7 +348,13 @@ def main():
 
         # Raw SVG data for the sale icon
         sale_icon_svg = """
-        <svg fill="#d00b0b" height="40px" width="40px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 455 455" xml:space="preserve" stroke="#d00b0b">
+        
+        """
+
+        if pd.notna(promo_price) and promo_price != 'N/A':
+            # Display sale price with embedded SVG and strikethrough for regular price
+            st.markdown(
+                f"""<div style="font-size: 16px;"><strong>Price:</strong> <svg fill="#d00b0b" height="40px" width="40px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 455 455" xml:space="preserve" stroke="#d00b0b">
         <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
         <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
         <g id="SVGRepo_iconCarrier">
@@ -358,12 +364,6 @@ def main():
             </g>
         </g>
         </svg>
-        """
-
-        if pd.notna(promo_price) and promo_price != 'N/A':
-            # Display sale price with embedded SVG and strikethrough for regular price
-            st.markdown(
-                f"""<div style="font-size: 16px;"><strong>Price:</strong> {sale_icon_svg} 
                 <strong>${promo_price}</strong> 
                 <span style="text-decoration: line-through; color: gray;">${regular_price}</span></div>""",
                 unsafe_allow_html=True
