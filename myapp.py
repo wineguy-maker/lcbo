@@ -355,7 +355,7 @@ def main():
 
     # Apply "Only Favourites" filter
     if only_favourites:
-        filtered_data = filtered_data[filtered_data['id'].isin(favourites)]
+        filtered_data = filtered_data[filtered_data['uri'].isin(favourites)]
 
     # Food Category Filtering
     if food_category != 'All Dishes':
