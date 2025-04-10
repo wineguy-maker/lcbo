@@ -182,6 +182,7 @@ def refresh_data(store_id=None):
                 'raw_is_buyable': raw_data.get('is_buyable', 'N/A'),
                 'raw_ec_price': raw_data.get('ec_price', 'N/A'),
                 'raw_ec_final_price': raw_data.get('ec_final_price', 'N/A'),
+                'raw_ec_promo_price': raw_data.get('ec_promo_price', 'N/A'),
                 'raw_lcbo_unit_volume': raw_data.get('lcbo_unit_volume', 'N/A'),
                 'raw_lcbo_alcohol_percent': raw_data.get('lcbo_alcohol_percent', 'N/A'),
                 'raw_lcbo_sugar_gm_per_ltr': raw_data.get('lcbo_sugar_gm_per_ltr', 'N/A'),
@@ -204,6 +205,7 @@ def refresh_data(store_id=None):
                 'raw_view_rank_monthly': raw_data.get('view_rank_monthly', 'N/A'),
                 'raw_sell_rank_yearly': raw_data.get('sell_rank_yearly', 'N/A'),
                 'raw_sell_rank_monthly': raw_data.get('sell_rank_monthly', 'N/A')
+                
             }
             products.append(product_info)
 
@@ -298,6 +300,7 @@ def main():
     exclude_usa = st.sidebar.checkbox("Exclude USA", value=False)
     in_stock = st.sidebar.checkbox("In Stock Only", value=False)
     only_vintages = st.sidebar.checkbox("Only Vintages", value=False)
+    only_sale_items = st.sidebar.checkbox("Only Sale Items", value=False)
 
    
     # Apply Filters and Sorting
@@ -306,7 +309,11 @@ def main():
                                 in_stock=in_stock, only_vintages=only_vintages)
     filtered_data = search_data(filtered_data, search_text)
 
-     # Food Category Filtering
+    # Apply "Only Sale Items" filter
+    if only_sale_items:
+        filtered_data = filtered_data[filtered_data['raw_ec_promo_price'].notna() & (filtered_data['raw_ec_promo_price'] != 'N/A')]
+
+    # Food Category Filtering
     if food_category != 'All Dishes':
         selected_items = food_items[food_items['Category'] == food_category]['FoodItem'].str.lower().tolist()
         filtered_data = filtered_data[filtered_data['raw_sysconcepts'].fillna('').apply(
@@ -336,7 +343,11 @@ def main():
     # Display Products
     for idx, row in page_data.iterrows():
         st.markdown(f"### {row['title']}")
-        st.markdown(f"**Price:** ${row.get('raw_ec_price', 'N/A')} | **Rating:** {row.get('raw_ec_rating', 'N/A')} | **Reviews:** {row.get('raw_avg_reviews', 'N/A')}")
+        if row.get('raw_ec_promo_price', 'N/A') != 'N/A':
+            st.markdown(f"**Price:** ~~${row.get('raw_ec_price', 'N/A')}~~ **${row['raw_ec_promo_price']}** (On Sale!)")
+        else:
+            st.markdown(f"**Price:** ${row.get('raw_ec_price', 'N/A')}")
+        st.markdown(f"**Rating:** {row.get('raw_ec_rating', 'N/A')} | **Reviews:** {row.get('raw_avg_reviews', 'N/A')}")
         
         # Display the thumbnail image
         thumbnail_url = row.get('raw_ec_thumbnails', None)
