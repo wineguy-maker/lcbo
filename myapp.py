@@ -5,6 +5,16 @@ from datetime import datetime
 import requests
 import re
 import json
+import firebase_admin
+from firebase_admin import credentials, db
+
+# Initialize Firebase Admin SDK
+if not firebase_admin._apps:
+    # Pass the dictionary directly from st.secrets
+    cred = credentials.Certificate(dict(st.secrets["firebase_credentials"]))
+    firebase_admin.initialize_app(cred, {
+        'databaseURL': st.secrets["firebase_database"]["url"]
+    })
 
 # -------------------------------
 # Data Handling
@@ -244,20 +254,27 @@ def refresh_data(store_id=None):
 # -------------------------------
 # Favourites Handling
 # -------------------------------
-FAVOURITES_FILE = "favourites.json"
+def ensure_collection_exists(collection_name):
+    """Ensure the Firebase collection exists."""
+    ref = db.reference(collection_name)
+    if not ref.get():
+        ref.set({"favourites": []})  # Initialize with an empty list
 
 def load_favourites():
-    """Load favourites from the JSON file."""
-    try:
-        with open(FAVOURITES_FILE, "r") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return []
+    """Load favourites from Firebase."""
+    collection_name = "favourites_collection"
+    ensure_collection_exists(collection_name)  # Ensure the collection exists
+    ref = db.reference(f"{collection_name}/favourites")
+    favourites = ref.get()
+    return favourites if favourites else []
 
 def save_favourites(favourites):
-    """Save favourites to the JSON file."""
-    with open(FAVOURITES_FILE, "w") as f:
-        json.dump(favourites, f)
+    """Save favourites to Firebase."""
+    collection_name = "favourites_collection"
+    ensure_collection_exists(collection_name)  # Ensure the collection exists
+    ref = db.reference(f"{collection_name}/favourites")
+    ref.set(favourites)
+    st.success("Favourites saved successfully!")
 
 def toggle_favourite(wine_id):
     """Toggle the favourite status of a wine."""
@@ -269,7 +286,7 @@ def toggle_favourite(wine_id):
     else:
         st.session_state.favourites.append(wine_id)  # Favourite
 
-    # Save the updated favourites to the JSON file
+    # Save the updated favourites to the Firebase
     save_favourites(st.session_state.favourites)
 
     # Mark the session state as updated
@@ -282,6 +299,22 @@ def main():
     st.title("LCBO Wine Filter")
     # Add this line to clear the cached data
     st.cache_data.clear()
+
+    # Sidebar Filters with improved header
+    st.sidebar.header("Filter Options 🔍")
+
+    # Authorization in the filters pane
+    if "authorized" not in st.session_state:
+        st.session_state.authorized = False
+
+    with st.sidebar.expander("Admin Authorization"):
+        pin_input = st.text_input("Enter PIN", type="password", key="auth_pin")
+        if st.button("Submit", key="auth_submit"):
+            if pin_input == st.secrets["correct_pin"]:
+                st.session_state.authorized = True
+                st.sidebar.success("Authorization successful!")
+            else:
+                st.sidebar.error("Incorrect PIN. Please try again.")
 
     # Initialize session state for favourites and UI updates
     if "favourites" not in st.session_state:
@@ -315,8 +348,6 @@ def main():
     else:
         data = load_data("products.csv")
 
-    # Sidebar Filters with improved header
-    st.sidebar.header("Filter Options 🔍")
     search_text = st.sidebar.text_input("Search", value="")
     sort_by = st.sidebar.selectbox("Sort by",
                                    ['Sort by', '# of reviews', 'Rating', 'Top Veiwed - Year', 'Top Veiwed - Month', 'Top Seller - Year',
@@ -403,10 +434,13 @@ def main():
         # Favourite button
         is_favourite = wine_id in st.session_state.favourites  # Check the updated favourites list
         heart_icon = "❤️" if is_favourite else "🤍"
-        if st.button(f"{heart_icon} Favourite", key=f"fav-{wine_id}"):
-            toggle_favourite(wine_id)
-            # Force a refresh of the app to update the button state
-            st.rerun()
+        if st.session_state.authorized:
+            if st.button(f"{heart_icon} Favourite", key=f"fav-{wine_id}"):
+                toggle_favourite(wine_id)
+                # Force a refresh of the app to update the button state
+                st.rerun()
+        else:
+            st.markdown(f"{heart_icon} Favourite", unsafe_allow_html=True)
 
         # Raw SVG data for the sale icon
         sale_icon_svg = """
