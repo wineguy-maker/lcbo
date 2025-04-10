@@ -4,17 +4,54 @@ import time
 from datetime import datetime
 import requests
 import re
-import json
-import firebase_admin
-from firebase_admin import credentials, db
+from supabase import create_client, Client
 
-# Initialize Firebase Admin SDK
-if not firebase_admin._apps:
-    # Pass the dictionary directly from st.secrets
-    cred = credentials.Certificate(dict(st.secrets["firebase_credentials"]))
-    firebase_admin.initialize_app(cred, {
-        'databaseURL': st.secrets["firebase_database"]["url"]
-    })
+# Supabase Configuration
+SUPABASE_URL = st.secrets["supabase"]["url"]
+SUPABASE_SERVICE_ROLE_KEY = st.secrets["supabase"]["key"]
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+PRODUCTS_TABLE = "Products"
+FAVOURITES_TABLE = "Favourites"
+
+def supabase_get_records(table_name):
+    """Fetch all records from a Supabase table."""
+    try:
+        response = supabase.table(table_name).select("*").execute()
+        return response.data  # Use the data attribute for successful responses
+    except Exception as e:
+        st.error(f"Failed to fetch records from {table_name}: {e}")
+        return []
+
+def supabase_upsert_record(table_name, record):
+    """Insert or update a record in a Supabase table."""
+    try:
+        response = supabase.table(table_name).upsert(record).execute()
+        return response.data  # Use the data attribute for successful responses
+    except Exception as e:
+        st.error(f"Failed to upsert record in {table_name}: {e}")
+        return None
+
+def supabase_delete_record(table_name, URI, user_id):
+    """Delete a record from a Supabase table."""
+    try:
+        query = supabase.table(table_name)
+        response = (
+        supabase.table(table_name)
+        .delete()
+        .eq("URI", URI)        # First filter
+        .eq("User ID",user_id)  # Second filter
+        .execute()
+        )
+        return response.data  # Use the data attribute for successful responses
+    except Exception as e:
+        st.error(f"Failed to delete record from {table_name}: {e}")
+        return None
+
+def load_products_from_supabase():
+    """Load products from Supabase."""
+    records = supabase_get_records(PRODUCTS_TABLE)
+    return pd.DataFrame(records)
 
 # -------------------------------
 # Data Handling
@@ -23,7 +60,7 @@ if not firebase_admin._apps:
 def load_data(file_path):
     df = pd.read_csv(file_path)
     return df
-    
+
 def load_food_items():
     try:
         food_items = pd.read_csv('food_items.csv')
@@ -31,7 +68,7 @@ def load_food_items():
     except Exception as e:
         st.error(f"Error loading food items: {e}")
         return pd.DataFrame(columns=['Category', 'FoodItem'])
-        
+
 def sort_data(data, column):
     sorted_data = data.sort_values(by=column, ascending=False)
     return sorted_data
@@ -51,7 +88,7 @@ def sort_data_filter(data, sort_by):
         data = data.sort_values(by='raw_ec_rating', ascending=False)
     elif sort_by == 'Top Viewed - Year':
         data = data.sort_values(by='raw_view_rank_yearly', ascending=True)
-    elif sort_by == 'Top Veiwed - Month':
+    elif sort_by == 'Top Viewed - Month':
         data = data.sort_values(by='raw_view_rank_monthly', ascending=True)
     elif sort_by == 'Top Seller - Year':
         data = data.sort_values(by='raw_sell_rank_yearly', ascending=True)
@@ -79,6 +116,51 @@ def filter_data(data, country='All Countries', region='All Regions', varietal='A
     return data
 
 # -------------------------------
+# Favourites Handling
+# -------------------------------
+def load_favourites():
+    """Load favourites from Supabase."""
+    records = supabase_get_records(FAVOURITES_TABLE)
+    return [record["URI"] for record in records if record.get("User ID") == "admin"]
+
+
+def save_favourites(favourites):
+    """Save favourites to Supabase."""
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    for uri in favourites:
+        supabase_upsert_record(FAVOURITES_TABLE, {"URI": uri, "Date": today_str, "User ID": "admin"})
+    # Reload favourites to ensure button state is updated
+    st.session_state.favourites = load_favourites()
+    st.success("Favourites saved successfully!")
+    st.rerun()
+
+def delete_favourites(favourites):
+    """Remove favourites in Supabase."""
+    for uri in favourites:
+        supabase_delete_record(FAVOURITES_TABLE, uri, "admin")
+    # Reload favourites to ensure button state is updated
+    st.session_state.favourites = load_favourites()
+    st.success("Favourites deleted successfully!")
+    st.rerun()
+
+def toggle_favourite(wine_id):
+    """Toggle the favourite status of a wine."""
+    # Load favourites filtered by the current user
+    favourites = load_favourites()
+    if wine_id in favourites:
+        # Remove from favourites by filtering the table using the URI column
+        delete_favourites([wine_id])
+        st.success(f"Removed wine with URI '{wine_id}' from favourites.")
+        st.rerun()
+    else:
+        # Add to favourites
+        save_favourites([wine_id])
+        st.success(f"Added wine with URI '{wine_id}' to favourites.")
+        
+    
+
+
+# -------------------------------
 # Helper: Transform Image URL
 # -------------------------------
 def transform_image_url(url, new_size):
@@ -95,18 +177,22 @@ def transform_image_url(url, new_size):
 # Refresh function
 # -------------------------------
 def refresh_data(store_id=None):
+    """Refresh data and update Supabase."""
     current_time = datetime.now()
-    st.info("Refreshing data...")
-
+    today_str = current_time.strftime("%Y-%m-%d")
+    # Check if today's data already exists in Supabase
+    records = supabase_get_records(PRODUCTS_TABLE)
+    if any(record.get("Date") == today_str for record in records):
+        st.info("Today's data already exists in Supabase. Skipping refresh.")
+        return load_products_from_supabase()
     url = "https://platform.cloud.coveo.com/rest/search/v2?organizationId=lcboproduction2kwygmc"
     headers = {
         "User-Agent": "your_user_agent",
         "Accept": "application/json",
         "Authorization": "Bearer xx883b5583-07fb-416b-874b-77cce565d927",
         "Content-Type": "application/json",
-        "Referer": "https://www.lcbo.com/"
+        "Referer": "https://www.lcbo.com/",
     }
-
     initial_payload = {
         "q": "",
         "tab": "clp-products-wine-red_wine",
@@ -126,7 +212,6 @@ def refresh_data(store_id=None):
         "firstResult": 0,
         "aq": "@ec_visibility==(2,4) @cp_browsing_category_deny<>0 @ec_category==\"Products|Wine|Red Wine\" (@ec_rating==5..5 OR @ec_rating==4..4.9)"
     }
-
     if store_id:
         dictionaryFieldContext = {
             "stores_stock": "",
@@ -145,9 +230,7 @@ def refresh_data(store_id=None):
         all_items = data['results']
         total_count = data['totalCount']
         st.info(f"Total Count: {total_count}")
-
         num_requests = (total_count // 500) + (1 if total_count % 500 != 0 else 0)
-
         for i in range(1, num_requests):
             payload = {
                 "q": "",
@@ -176,7 +259,6 @@ def refresh_data(store_id=None):
             else:
                 st.error(f"Key 'results' not found in the response during pagination. Response: {data}")
             time.sleep(1)  # Avoid hitting the server too frequently
-
         products = []
         for product in all_items:
             raw_data = product['raw']
@@ -216,13 +298,10 @@ def refresh_data(store_id=None):
                 'raw_view_rank_monthly': raw_data.get('view_rank_monthly', 'N/A'),
                 'raw_sell_rank_yearly': raw_data.get('sell_rank_yearly', 'N/A'),
                 'raw_sell_rank_monthly': raw_data.get('sell_rank_monthly', 'N/A')
-                
             }
             products.append(product_info)
-
         
         df_products = pd.DataFrame(products)
-
         # Calculate mean rating for products with reviews
         valid_reviews = pd.to_numeric(df_products['raw_avg_reviews'], errors='coerce')
         valid_ratings = pd.to_numeric(df_products['raw_ec_rating'], errors='coerce')
@@ -243,67 +322,27 @@ def refresh_data(store_id=None):
             ),
             axis=1
         )
-
-        df_products.to_csv('products.csv', index=False, encoding='utf-8-sig')
-        st.success("Data refreshed successfully!")
-        return load_data("products.csv")
+        for product in products:
+            product["Date"] = today_str  # Add today's date to each product
+            supabase_upsert_record(PRODUCTS_TABLE, product)
+        st.success("Data refreshed and updated in Supabase!")
+        return load_products_from_supabase()
     else:
         st.error("Failed to retrieve data from the API.")
         return None
 
 # -------------------------------
-# Favourites Handling
-# -------------------------------
-def ensure_collection_exists(collection_name):
-    """Ensure the Firebase collection exists."""
-    ref = db.reference(collection_name)
-    if not ref.get():
-        ref.set({"favourites": []})  # Initialize with an empty list
-
-def load_favourites():
-    """Load favourites from Firebase."""
-    collection_name = "favourites_collection"
-    ensure_collection_exists(collection_name)  # Ensure the collection exists
-    ref = db.reference(f"{collection_name}/favourites")
-    favourites = ref.get()
-    return favourites if favourites else []
-
-def save_favourites(favourites):
-    """Save favourites to Firebase."""
-    collection_name = "favourites_collection"
-    ensure_collection_exists(collection_name)  # Ensure the collection exists
-    ref = db.reference(f"{collection_name}/favourites")
-    ref.set(favourites)
-    st.success("Favourites saved successfully!")
-
-def toggle_favourite(wine_id):
-    """Toggle the favourite status of a wine."""
-    if "favourites" not in st.session_state:
-        st.session_state.favourites = load_favourites()
-
-    if wine_id in st.session_state.favourites:
-        st.session_state.favourites.remove(wine_id)  # Unfavourite
-    else:
-        st.session_state.favourites.append(wine_id)  # Favourite
-
-    # Save the updated favourites to the Firebase
-    save_favourites(st.session_state.favourites)
-
-    # Mark the session state as updated
-    st.session_state.ui_updated = True
-
-# -------------------------------
 # Main Streamlit App
 # -------------------------------
 def main():
-    st.title("LCBO Wine Filter")
+    st.title("🍷 LCBO Wine Filter")
     # Add this line to clear the cached data
     st.cache_data.clear()
 
     # Sidebar Filters with improved header
     st.sidebar.header("Filter Options 🔍")
 
-    # Authorization in the filters pane
+    # Authorization in the filters pane:
     if "authorized" not in st.session_state:
         st.session_state.authorized = False
 
@@ -337,35 +376,28 @@ def main():
     }
     selected_store = st.sidebar.selectbox("Store", options=store_options)
 
-    # Refresh data if store selection changes
+    # Refresh data if store selection changes:
     if selected_store != st.session_state.selected_store:
         st.session_state.selected_store = selected_store
         if selected_store != 'Select Store':
             store_id = store_ids.get(selected_store)
             data = refresh_data(store_id=store_id)
         else:
-            data = load_data("products.csv")
+            data = load_products_from_supabase()
     else:
-        data = load_data("products.csv")
+        data = load_products_from_supabase()
 
     search_text = st.sidebar.text_input("Search", value="")
-    sort_by = st.sidebar.selectbox("Sort by",
-                                   ['Sort by', '# of reviews', 'Rating', 'Top Veiwed - Year', 'Top Veiwed - Month', 'Top Seller - Year',
-                                    'Top Seller - Month'])
-    
+    sort_by = st.sidebar.selectbox("Sort by", ['Sort by', '# of reviews', 'Rating', 'Top Veiwed - Year', 'Top Veiwed - Month', 'Top Seller - Year', 'Top Seller - Month'])
+
     # Create filter options from data
-    
-    # Load food items
     food_items = load_food_items()
-    
-    # Get unique categories
     categories = food_items['Category'].unique()
-    
     country_options = ['All Countries'] + sorted(data['raw_country_of_manufacture'].dropna().unique().tolist())
     region_options = ['All Regions'] + sorted(data['raw_lcbo_region_name'].dropna().unique().tolist())
     varietal_options = ['All Varietals'] + sorted(data['raw_lcbo_varietal_name'].dropna().unique().tolist())
     food_options = ['All Dishes'] + sorted(categories.tolist())
-    
+
     country = st.sidebar.selectbox("Country", options=country_options)
     region = st.sidebar.selectbox("Region", options=region_options)
     varietal = st.sidebar.selectbox("Varietal", options=varietal_options)
@@ -381,8 +413,7 @@ def main():
    
     # Apply Filters and Sorting
     filtered_data = data.copy()
-    filtered_data = filter_data(filtered_data, country=country, region=region, varietal=varietal, exclude_usa=exclude_usa,
-                                in_stock=in_stock, only_vintages=only_vintages)
+    filtered_data = filter_data(filtered_data, country=country, region=region, varietal=varietal, exclude_usa=exclude_usa, in_stock=in_stock, only_vintages=only_vintages)
     filtered_data = search_data(filtered_data, search_text)
 
     # Apply "Only Sale Items" filter
@@ -444,7 +475,16 @@ def main():
 
         # Raw SVG data for the sale icon
         sale_icon_svg = """
-        
+        <svg fill="#d00b0b" height="40px" width="40px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 455 455" xml:space="preserve" stroke="#d00b0b">
+        <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+        <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+        <g id="SVGRepo_iconCarrier">
+            <g>
+                <polygon points="191.455,234.88 206.575,234.88 199.105,212.29"></polygon>
+                <path d="M0,113.06V341.94h455V113.06H0z M160.991,249.685c-1.35,2.49-3.136,4.5-5.355,6.03c-2.221,1.53-4.77,2.641-7.65,3.33 c-2.88,0.689-5.85,1.035-8.91,1.035c-2.34,0-4.741-0.18-7.2-0.54c-2.461-0.36-4.86-0.885-7.2-1.575 c-2.34-0.689-4.605-1.515-6.795-2.475c-2.191-0.959-4.216-2.07-6.075-3.33l6.48-12.87c0.239,0.301,1.02,0.87,2.34,1.71 c1.319,0.841,2.955,1.68,4.905,2.52c1.949,0.841,4.125,1.59,6.525,2.25c2.399,0.661,4.829,0.99,7.29,0.99 c5.22,0,7.83-1.589,7.83-4.77c0-1.199-0.391-2.189-1.17-2.97c-0.78-0.779-1.86-1.485-3.24-2.115 c-1.381-0.63-3.015-1.215-4.905-1.755c-1.89-0.54-3.946-1.139-6.165-1.8c-2.94-0.9-5.49-1.875-7.65-2.925 c-2.16-1.049-3.946-2.264-5.355-3.645c-1.41-1.379-2.461-2.97-3.15-4.77c-0.69-1.8-1.035-3.899-1.035-6.3 c0-3.36,0.63-6.33,1.89-8.91c1.26-2.579,2.97-4.754,5.13-6.525c2.16-1.769,4.665-3.105,7.515-4.005 c2.849-0.9,5.864-1.35,9.045-1.35c2.219,0,4.41,0.211,6.57,0.63c2.16,0.42,4.23,0.96,6.21,1.62c1.98,0.661,3.825,1.411,5.535,2.25 c1.71,0.841,3.285,1.68,4.725,2.52l-6.48,12.24c-0.18-0.239-0.81-0.689-1.89-1.35c-1.08-0.66-2.43-1.35-4.05-2.07 c-1.62-0.72-3.391-1.35-5.31-1.89c-1.921-0.54-3.84-0.81-5.76-0.81c-5.281,0-7.92,1.771-7.92,5.31c0,1.08,0.284,1.98,0.855,2.7 c0.57,0.72,1.409,1.366,2.52,1.935c1.11,0.571,2.505,1.095,4.185,1.575c1.679,0.481,3.63,1.021,5.85,1.62 c3.06,0.841,5.819,1.755,8.28,2.745c2.459,0.99,4.545,2.221,6.255,3.69c1.71,1.471,3.029,3.255,3.96,5.355 c0.93,2.101,1.395,4.621,1.395,7.56C163.016,244.15,162.34,247.196,160.991,249.685z M213.955,259.36l-4.95-14.31h-19.89 l-4.86,14.31h-15.12l23.31-63.9h13.32l23.31,63.9H213.955z M285.595,259.36h-45.72v-63.9h14.76v50.94h30.96V259.36z M341.935,259.36h-44.91v-63.9h44.1v12.96h-29.34v12.42h25.2v11.97h-25.2v13.59h30.15V259.36z"></path>
+            </g>
+        </g>
+        </svg>
         """
 
         if pd.notna(promo_price) and promo_price != 'N/A':
@@ -460,8 +500,7 @@ def main():
             </g>
         </g>
         </svg>
-                <strong>${promo_price}</strong> 
-                <span style="text-decoration: line-through; color: gray;">${regular_price}</span></div>""",
+                <strong>${promo_price}</strong> <span style="text-decoration: line-through; color: gray;">${regular_price}</span></div>""",
                 unsafe_allow_html=True
             )
         else:
@@ -470,7 +509,7 @@ def main():
                 f"""<div style="font-size: 16px;"><strong>Price:</strong> ${regular_price}</div>""",
                 unsafe_allow_html=True
             )
-        
+
         st.markdown(f"**Rating:** {row.get('raw_ec_rating', 'N/A')} | **Reviews:** {row.get('raw_avg_reviews', 'N/A')}")
 
         # Display the thumbnail image
@@ -510,8 +549,7 @@ def main():
             st.markdown(f"**Yearly View Rank:** {row['raw_view_rank_yearly']}")
             st.markdown(f"**Alcohol %:** {row['raw_lcbo_alcohol_percent']}")
             st.markdown(f"**Sugar (p/ltr):** {row['raw_lcbo_sugar_gm_per_ltr']}")
-    
-        st.markdown("---")
+            st.markdown("---")
 
     # Reset the UI update flag
     st.session_state.ui_updated = False
