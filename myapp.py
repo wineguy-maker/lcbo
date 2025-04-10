@@ -261,12 +261,16 @@ def save_favourites(favourites):
 
 def toggle_favourite(wine_id):
     """Toggle the favourite status of a wine."""
-    favourites = load_favourites()
-    if wine_id in favourites:
-        favourites.remove(wine_id)  # Unfavourite
+    if "favourites" not in st.session_state:
+        st.session_state.favourites = load_favourites()
+
+    if wine_id in st.session_state.favourites:
+        st.session_state.favourites.remove(wine_id)  # Unfavourite
     else:
-        favourites.append(wine_id)  # Favourite
-    save_favourites(favourites)
+        st.session_state.favourites.append(wine_id)  # Favourite
+
+    # Save the updated favourites to the JSON file
+    save_favourites(st.session_state.favourites)
 
 # -------------------------------
 # Main Streamlit App
@@ -275,6 +279,11 @@ def main():
     st.title("LCBO Wine Filter")
     # Add this line to clear the cached data
     st.cache_data.clear()
+
+    # Initialize session state for favourites
+    if "favourites" not in st.session_state:
+        st.session_state.favourites = load_favourites()
+
     # Initialize session state for store and image modal trigger
     if 'selected_store' not in st.session_state:
         st.session_state.selected_store = 'Select Store'
@@ -331,8 +340,8 @@ def main():
     only_sale_items = st.sidebar.checkbox("Only Sale Items", value=False)
     only_favourites = st.sidebar.checkbox("Only Favourites", value=False)
 
-    # Load favourites
-    favourites = load_favourites()
+    # Load favourites from session state
+    favourites = st.session_state.favourites
    
     # Apply Filters and Sorting
     filtered_data = data.copy()
@@ -391,7 +400,6 @@ def main():
         heart_icon = "❤️" if is_favourite else "🤍"
         if st.button(f"{heart_icon} Favourite", key=f"fav-{wine_id}"):
             toggle_favourite(wine_id)
-            st.experimental_rerun()  # Refresh the page to update the UI
 
         # Raw SVG data for the sale icon
         sale_icon_svg = """
