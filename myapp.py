@@ -479,7 +479,7 @@ def refresh_data(store_id=None, owner=GITHUB_REPO_OWNER, repo=GITHUB_REPO_NAME, 
 # -------------------------------
 def main():
     st.set_page_config(layout="wide") # Use wider layout
-    st.title("🍷 LCBO Wine Filter & Favourites")
+    st.title("🍷 LCBO Wine Finder")
 
     # --- Load Initial Data & Favorites ---
     # Load favorites first, store in session state
