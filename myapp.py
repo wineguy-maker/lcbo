@@ -343,17 +343,22 @@ def main():
     # Display Products
     for idx, row in page_data.iterrows():
         st.markdown(f"### {row['title']}")
-        if row.get('raw_ec_promo_price', 'N/A') != 'N/A':
-            # Correct HTML rendering for sale price and strikethrough
+        promo_price = row.get('raw_ec_promo_price', None)
+        regular_price = row.get('raw_ec_price', 'N/A')
+
+        if pd.notna(promo_price) and promo_price != 'N/A':
+            # Display sale price with icon and strikethrough for regular price
             sale_icon = "https://github.com/wineguy-maker/lcbo/blob/1f74140b1ece50b9ed0eeb73eafca116f823da68/sale.svg"  # Path to the sale icon
             st.markdown(
                 f"""<p><strong>Price:</strong> <img src="{sale_icon}" style="vertical-align: middle;" width="20"> 
-                <strong>${row['raw_ec_promo_price']}</strong> 
-                <span style="text-decoration: line-through; color: gray;">${row.get('raw_ec_price', 'N/A')}</span></p>""",
+                <strong>${promo_price}</strong> 
+                <span style="text-decoration: line-through; color: gray;">${regular_price}</span></p>""",
                 unsafe_allow_html=True
             )
         else:
-            st.markdown(f"**Price:** ${row.get('raw_ec_price', 'N/A')}")
+            # Display only the regular price
+            st.markdown(f"**Price:** ${regular_price}")
+        
         st.markdown(f"**Rating:** {row.get('raw_ec_rating', 'N/A')} | **Reviews:** {row.get('raw_avg_reviews', 'N/A')}")
         
         # Display the thumbnail image
