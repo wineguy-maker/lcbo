@@ -344,11 +344,12 @@ def main():
     for idx, row in page_data.iterrows():
         st.markdown(f"### {row['title']}")
         if row.get('raw_ec_promo_price', 'N/A') != 'N/A':
-            # Display sale price with icon and strikethrough for regular price
-            sale_icon = "sale.svg"  # Path to the sale icon
+            # Correct HTML rendering for sale price and strikethrough
+            sale_icon = "https://github.com/wineguy-maker/lcbo/blob/1f74140b1ece50b9ed0eeb73eafca116f823da68/sale.svg"  # Path to the sale icon
             st.markdown(
-                f"**Price:** <img src='{sale_icon}' width='20' style='vertical-align:middle;'> **${row['raw_ec_promo_price']}** "
-                f"(~~${row.get('raw_ec_price', 'N/A')}~~)",
+                f"""<p><strong>Price:</strong> <img src="{sale_icon}" style="vertical-align: middle;" width="20"> 
+                <strong>${row['raw_ec_promo_price']}</strong> 
+                <span style="text-decoration: line-through; color: gray;">${row.get('raw_ec_price', 'N/A')}</span></p>""",
                 unsafe_allow_html=True
             )
         else:
