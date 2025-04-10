@@ -346,11 +346,24 @@ def main():
         promo_price = row.get('raw_ec_promo_price', None)
         regular_price = row.get('raw_ec_price', 'N/A')
 
+        # Raw SVG data for the sale icon
+        sale_icon_svg = """
+        <svg fill="#d00b0b" height="20px" width="20px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 455 455" xml:space="preserve" stroke="#d00b0b">
+        <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+        <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+        <g id="SVGRepo_iconCarrier">
+            <g>
+                <polygon points="191.455,234.88 206.575,234.88 199.105,212.29"></polygon>
+                <path d="M0,113.06V341.94h455V113.06H0z M160.991,249.685c-1.35,2.49-3.136,4.5-5.355,6.03c-2.221,1.53-4.77,2.641-7.65,3.33 c-2.88,0.689-5.85,1.035-8.91,1.035c-2.34,0-4.741-0.18-7.2-0.54c-2.461-0.36-4.86-0.885-7.2-1.575 c-2.34-0.689-4.605-1.515-6.795-2.475c-2.191-0.959-4.216-2.07-6.075-3.33l6.48-12.87c0.239,0.301,1.02,0.87,2.34,1.71 c1.319,0.841,2.955,1.68,4.905,2.52c1.949,0.841,4.125,1.59,6.525,2.25c2.399,0.661,4.829,0.99,7.29,0.99 c5.22,0,7.83-1.589,7.83-4.77c0-1.199-0.391-2.189-1.17-2.97c-0.78-0.779-1.86-1.485-3.24-2.115 c-1.381-0.63-3.015-1.215-4.905-1.755c-1.89-0.54-3.946-1.139-6.165-1.8c-2.94-0.9-5.49-1.875-7.65-2.925 c-2.16-1.049-3.946-2.264-5.355-3.645c-1.41-1.379-2.461-2.97-3.15-4.77c-0.69-1.8-1.035-3.899-1.035-6.3 c0-3.36,0.63-6.33,1.89-8.91c1.26-2.579,2.97-4.754,5.13-6.525c2.16-1.769,4.665-3.105,7.515-4.005 c2.849-0.9,5.864-1.35,9.045-1.35c2.219,0,4.41,0.211,6.57,0.63c2.16,0.42,4.23,0.96,6.21,1.62c1.98,0.661,3.825,1.411,5.535,2.25 c1.71,0.841,3.285,1.68,4.725,2.52l-6.48,12.24c-0.18-0.239-0.81-0.689-1.89-1.35c-1.08-0.66-2.43-1.35-4.05-2.07 c-1.62-0.72-3.391-1.35-5.31-1.89c-1.921-0.54-3.84-0.81-5.76-0.81c-5.281,0-7.92,1.771-7.92,5.31c0,1.08,0.284,1.98,0.855,2.7 c0.57,0.72,1.409,1.366,2.52,1.935c1.11,0.571,2.505,1.095,4.185,1.575c1.679,0.481,3.63,1.021,5.85,1.62 c3.06,0.841,5.819,1.755,8.28,2.745c2.459,0.99,4.545,2.221,6.255,3.69c1.71,1.471,3.029,3.255,3.96,5.355 c0.93,2.101,1.395,4.621,1.395,7.56C163.016,244.15,162.34,247.196,160.991,249.685z M213.955,259.36l-4.95-14.31h-19.89 l-4.86,14.31h-15.12l23.31-63.9h13.32l23.31,63.9H213.955z M285.595,259.36h-45.72v-63.9h14.76v50.94h30.96V259.36z M341.935,259.36h-44.91v-63.9h44.1v12.96h-29.34v12.42h25.2v11.97h-25.2v13.59h30.15V259.36z"></path>
+            </g>
+        </g>
+        </svg>
+        """
+
         if pd.notna(promo_price) and promo_price != 'N/A':
-            # Display sale price with icon and strikethrough for regular price
-            sale_icon = "https://github.com/wineguy-maker/lcbo/blob/1f74140b1ece50b9ed0eeb73eafca116f823da68/sale.svg"  # Path to the sale icon
+            # Display sale price with embedded SVG and strikethrough for regular price
             st.markdown(
-                f"""<p><strong>Price:</strong> <img src="{sale_icon}" style="vertical-align: middle;" width="20"> 
+                f"""<p><strong>Price:</strong> {sale_icon_svg} 
                 <strong>${promo_price}</strong> 
                 <span style="text-decoration: line-through; color: gray;">${regular_price}</span></p>""",
                 unsafe_allow_html=True
