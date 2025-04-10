@@ -381,8 +381,12 @@ def main():
         promo_price = row.get('raw_ec_promo_price', None)
         regular_price = row.get('raw_ec_price', 'N/A')
 
+        # Use 'id' if it exists, otherwise fallback to 'title' or generate a unique identifier
+        wine_id = row.get('uri', row['title'])  # Fallback to 'title' if 'id' is missing
+        if not wine_id:
+            wine_id = f"wine-{idx}"  # Generate a unique ID if both are missing
+
         # Favourite button
-        wine_id = row['id']  # Assuming each wine has a unique 'id'
         is_favourite = wine_id in favourites
         heart_icon = "❤️" if is_favourite else "🤍"
         if st.button(f"{heart_icon} Favourite", key=f"fav-{wine_id}"):
