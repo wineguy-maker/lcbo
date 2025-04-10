@@ -405,8 +405,8 @@ def main():
         heart_icon = "❤️" if is_favourite else "🤍"
         if st.button(f"{heart_icon} Favourite", key=f"fav-{wine_id}"):
             toggle_favourite(wine_id)
-            # Update the heart icon dynamically by modifying session state
-            st.session_state.favourites = st.session_state.favourites  # Trigger UI update
+            # Force a refresh of the app to update the button state
+            st.rerun()
 
         # Raw SVG data for the sale icon
         sale_icon_svg = """
