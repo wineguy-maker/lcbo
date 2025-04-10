@@ -401,10 +401,12 @@ def main():
             wine_id = f"wine-{idx}"  # Generate a unique ID if both are missing
 
         # Favourite button
-        is_favourite = wine_id in favourites
+        is_favourite = wine_id in st.session_state.favourites  # Check the updated favourites list
         heart_icon = "❤️" if is_favourite else "🤍"
         if st.button(f"{heart_icon} Favourite", key=f"fav-{wine_id}"):
             toggle_favourite(wine_id)
+            # Update the heart icon dynamically by modifying session state
+            st.session_state.favourites = st.session_state.favourites  # Trigger UI update
 
         # Raw SVG data for the sale icon
         sale_icon_svg = """
