@@ -272,6 +272,9 @@ def toggle_favourite(wine_id):
     # Save the updated favourites to the JSON file
     save_favourites(st.session_state.favourites)
 
+    # Mark the session state as updated
+    st.session_state.ui_updated = True
+
 # -------------------------------
 # Main Streamlit App
 # -------------------------------
@@ -280,9 +283,11 @@ def main():
     # Add this line to clear the cached data
     st.cache_data.clear()
 
-    # Initialize session state for favourites
+    # Initialize session state for favourites and UI updates
     if "favourites" not in st.session_state:
         st.session_state.favourites = load_favourites()
+    if "ui_updated" not in st.session_state:
+        st.session_state.ui_updated = False
 
     # Initialize session state for store and image modal trigger
     if 'selected_store' not in st.session_state:
@@ -431,7 +436,7 @@ def main():
             )
         
         st.markdown(f"**Rating:** {row.get('raw_ec_rating', 'N/A')} | **Reviews:** {row.get('raw_avg_reviews', 'N/A')}")
-        
+
         # Display the thumbnail image
         thumbnail_url = row.get('raw_ec_thumbnails', None)
         if pd.notna(thumbnail_url) and thumbnail_url != 'N/A':
@@ -471,6 +476,9 @@ def main():
             st.markdown(f"**Sugar (p/ltr):** {row['raw_lcbo_sugar_gm_per_ltr']}")
     
         st.markdown("---")
+
+    # Reset the UI update flag
+    st.session_state.ui_updated = False
 
 if __name__ == "__main__":
     main()
