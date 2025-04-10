@@ -344,7 +344,13 @@ def main():
     for idx, row in page_data.iterrows():
         st.markdown(f"### {row['title']}")
         if row.get('raw_ec_promo_price', 'N/A') != 'N/A':
-            st.markdown(f"**Price:** ~~${row.get('raw_ec_price', 'N/A')}~~ **${row['raw_ec_promo_price']}** (On Sale!)")
+            # Display sale price with icon and strikethrough for regular price
+            sale_icon = "sale.svg"  # Path to the sale icon
+            st.markdown(
+                f"**Price:** <img src='{sale_icon}' width='20' style='vertical-align:middle;'> **${row['raw_ec_promo_price']}** "
+                f"(~~${row.get('raw_ec_price', 'N/A')}~~)",
+                unsafe_allow_html=True
+            )
         else:
             st.markdown(f"**Price:** ${row.get('raw_ec_price', 'N/A')}")
         st.markdown(f"**Rating:** {row.get('raw_ec_rating', 'N/A')} | **Reviews:** {row.get('raw_avg_reviews', 'N/A')}")
