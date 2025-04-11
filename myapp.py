@@ -25,7 +25,7 @@ def supabase_get_records(table_name):
         response = supabase.table(table_name).select("*").execute()
         return response.data  # Use the data attribute for successful responses
     except Exception as e:
-        st.error(f"Failed to fetch records from {table_name}: {e}")
+        #st.error(f"Failed to fetch records from {table_name}: {e}")
         return []
 
 def supabase_upsert_record(table_name, record):
