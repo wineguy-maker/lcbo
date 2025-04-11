@@ -411,7 +411,7 @@ def refresh_data(store_id=None):
         valid_reviews = pd.to_numeric(df_products['raw_avg_reviews'], errors='coerce')
         valid_ratings = pd.to_numeric(df_products['raw_ec_rating'], errors='coerce')
         mean_rating = valid_ratings[valid_reviews > 0].mean()
-        minimum_votes = 10  # Minimum number of votes required
+        minimum_votes = 30  # Minimum number of votes required
         
         def weighted_rating(R, v, m, C):
             # Calculate IMDb-style weighted rating
