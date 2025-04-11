@@ -192,44 +192,42 @@ def transform_image_url(url, new_size):
 # -------------------------------
 # Refresh function
 # -------------------------------
-def get_favourites_with_lowest_price():
-    """Check if favourites are at their lowest price."""
+def get_favourites_with_lowest_promo_price():
+    """Check if favourites are at their lowest promo price."""
     favourites = supabase_get_records(FAVOURITES_TABLE)
     products = supabase_get_records(PRODUCTS_TABLE)
-    price_history = supabase_get_records("Price History") 
+    price_history = supabase_get_records("Price History")
 
     lowest_price_items = []
     for fav in favourites:
         uri = fav["URI"]
 
-        # Look up the current price in the Products table
+        # Look up the current promo price in the Products table
         product = next((p for p in products if p["uri"] == uri), None)
         if not product:
             continue
-        current_price = product.get("raw_ec_promo_price", "N/A")
-        if current_price == "N/A":
-            current_price = product.get("raw_ec_price", "N/A")
-        if current_price == "N/A":
+        current_promo_price = product.get("raw_ec_promo_price", "N/A")
+        if current_promo_price == "N/A":
             continue
 
-        # Look up the lowest price in the Price History table
-        history = [entry for entry in price_history if entry["URI"] == uri]
+        # Look up the lowest promo price in the Price History table
+        history = [entry for entry in price_history if entry["URI"] == uri and entry["Price"] != "N/A"]
         if not history:
             continue
-        lowest_price = min(entry["Price"] for entry in history)
+        lowest_promo_price = min(float(entry["Price"]) for entry in history)
 
         # Compare prices
-        if float(current_price) == float(lowest_price):
+        if float(current_promo_price) == lowest_promo_price:
             lowest_price_items.append({
-                "Title": product.get("title", "Unknown"),  
+                "Title": product.get("title", "Unknown"),
                 "URI": uri,
-                "Current Price": current_price,
-                "Lowest Price": lowest_price
+                "Current Promo Price": current_promo_price,
+                "Lowest Promo Price": lowest_promo_price
             })
     return lowest_price_items
 
-def send_email_with_lowest_prices(items):
-    """Send an email with the list of favourite items at their lowest price using Postmark SMTP."""
+def send_email_with_lowest_promo_prices(items):
+    """Send an email with the list of favourite items at their lowest promo price using Postmark SMTP."""
     if not items:
         return
 
@@ -242,7 +240,7 @@ def send_email_with_lowest_prices(items):
     # Email configuration
     sender_email = "winefind@justemail.ca"  # Replace with your sender email
     receiver_email = "winefind@justemail.ca"  # Replace with your recipient email
-    subject = "Favourites at Their Lowest Price"
+    subject = "Favourites at Their Lowest Promo Price"
 
     # Create the email content
     message = MIMEMultipart()
@@ -250,9 +248,9 @@ def send_email_with_lowest_prices(items):
     message["To"] = receiver_email
     message["Subject"] = subject
 
-    html_content = "<h3>Favourites at Their Lowest Price</h3><table border='1'><tr><th>Title</th><th>URI</th><th>Current Price</th><th>Lowest Price</th></tr>"
+    html_content = "<h3>Favourites at Their Lowest Promo Price</h3><table border='1'><tr><th>Title</th><th>URI</th><th>Current Promo Price</th><th>Lowest Promo Price</th></tr>"
     for item in items:
-        html_content += f"<tr><td>{item['Title']}</td><td><a href='{item['URI']}'>{item['URI']}</a></td><td>{item['Current Price']}</td><td>{item['Lowest Price']}</td></tr>"
+        html_content += f"<tr><td>{item['Title']}</td><td><a href='{item['URI']}'>{item['URI']}</a></td><td>${item['Current Promo Price']}</td><td>${item['Lowest Promo Price']}</td></tr>"
     html_content += "</table>"
 
     message.attach(MIMEText(html_content, "html"))
@@ -268,10 +266,9 @@ def send_email_with_lowest_prices(items):
 
 def background_update(df_products, today_str):
     """Perform additional background tasks like checking favourites and sending emails."""
-    # Check favourites for lowest prices and send an email
-    lowest_price_items = get_favourites_with_lowest_price()
-    send_email_with_lowest_prices(lowest_price_items)
-
+    # Check favourites for lowest promo prices and send an email
+    lowest_price_items = get_favourites_with_lowest_promo_price()
+    send_email_with_lowest_promo_prices(lowest_price_items)
 
 def refresh_data(store_id=None):
     """Refresh data and update Supabase."""
