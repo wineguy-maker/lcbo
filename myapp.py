@@ -205,7 +205,7 @@ def get_favourites_with_lowest_promo_price():
     current_time = datetime.now()
     today_str = current_time.strftime("%Y-%m-%d")
     if any(price_history.get("Date") == today_str for price_history in price_history):
-    return
+        return
     
     lowest_price_items = []
     for fav in favourites:
