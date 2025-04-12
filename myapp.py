@@ -16,6 +16,10 @@ SUPABASE_URL = st.secrets["supabase"]["url"]
 SUPABASE_SERVICE_ROLE_KEY = st.secrets["supabase"]["key"]
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
+#Email
+SMTP_USER = st.secrets["smtp"]["username"]
+SMTP_PASS = st.secrets["smtp"]["password"]
+
 PRODUCTS_TABLE = "Products"
 FAVOURITES_TABLE = "Favourites"
 
@@ -198,6 +202,9 @@ def get_favourites_with_lowest_promo_price():
     products = supabase_get_records(PRODUCTS_TABLE)
     price_history = supabase_get_records("Price History")
 
+    if any(price_history.get("Date") == today_str for price_history in price_history):
+    return
+    
     lowest_price_items = []
     for fav in favourites:
         uri = fav["URI"]
@@ -234,8 +241,8 @@ def send_email_with_lowest_promo_prices(items):
     # Postmark SMTP configuration
     smtp_server = "smtp-broadcasts.postmarkapp.com"
     smtp_port = 587
-    smtp_username = "PM-B-broadcast-o5E13wA0FjsIeCQNnCbh3"
-    smtp_password = "_PShFYnMnyik9CCoMZi7cog6W_oV8PjnxsK7"
+    smtp_username = SMTP_USER
+    smtp_password = SMTP_PASS
 
     # Email configuration
     sender_email = "winefind@justemail.ca"  # Replace with your sender email
@@ -276,8 +283,8 @@ def refresh_data(store_id=None):
     today_str = current_time.strftime("%Y-%m-%d")
     # Check if today's data already exists in Supabase
     records = supabase_get_records(PRODUCTS_TABLE)
-    if any(record.get("Date") == today_str for record in records):
-        return load_products_from_supabase()
+   # if any(record.get("Date") == today_str for record in records):
+   #     return load_products_from_supabase()
 
     url = "https://platform.cloud.coveo.com/rest/search/v2?organizationId=lcboproduction2kwygmc"
     headers = {
