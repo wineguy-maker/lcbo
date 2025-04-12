@@ -202,6 +202,8 @@ def get_favourites_with_lowest_promo_price():
     products = supabase_get_records(PRODUCTS_TABLE)
     price_history = supabase_get_records("Price History")
 
+    current_time = datetime.now()
+    today_str = current_time.strftime("%Y-%m-%d")
     if any(price_history.get("Date") == today_str for price_history in price_history):
     return
     
