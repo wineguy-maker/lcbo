@@ -415,15 +415,27 @@ def refresh_data(store_id=None):
             return (v / (v + m)) * R + (m / (v + m)) * C
 
         # Compute weighted rating using numeric conversion
+        # Compute weighted rating using numeric conversion
         df_products['weighted_rating'] = df_products.apply(
             lambda x: weighted_rating(
-                float(x['raw_ec_rating']) if pd.notna(x['raw_ec_rating']) and x['raw_ec_rating'] != 'N/A' else 0,
+                float(x['raw_ec_rating']) if pd.notna(x['raw_ec_rating']) and x['raw_ec_rating'] != 'N/A' and float(x['raw_avg_reviews']) > 0 else 0,
                 float(x['raw_avg_reviews']) if pd.notna(x['raw_avg_reviews']) and x['raw_avg_reviews'] != 'N/A' else 0,
                 minimum_votes,
                 mean_rating if not pd.isna(mean_rating) else 0
             ),
             axis=1
-        )
+       )
+        
+        
+       # df_products['weighted_rating'] = df_products.apply(
+     #       lambda x: weighted_rating(
+  #              float(x['raw_ec_rating']) if pd.notna(x['raw_ec_rating']) and x['raw_ec_rating'] != 'N/A' else 0,
+ #               float(x['raw_avg_reviews']) if pd.notna(x['raw_avg_reviews']) and x['raw_avg_reviews'] != 'N/A' else 0,
+#                minimum_votes,
+#                mean_rating if not pd.isna(mean_rating) else 0
+#            ),
+#            axis=1
+#        )
 
 
         # Start background thread for updates
