@@ -54,10 +54,32 @@ def supabase_delete_record(table_name, URI, user_id):
     except Exception as e:
         return None  # Remove st.error message
 
-def load_products_from_supabase():
-    """Load products from Supabase."""
-    records = supabase_get_records(PRODUCTS_TABLE)
-    return pd.DataFrame(records)
+def load_latest_products_from_supabase():
+    """Load only the most recent snapshot of products from Supabase."""
+    try:
+        # Step 1: Find the latest date in the Products table
+        latest_date_response = (
+            supabase.table(PRODUCTS_TABLE)
+            .select("Date")
+            .order("Date", desc=True)
+            .limit(1)
+            .execute()
+        )
+        if not latest_date_response.data:
+            return pd.DataFrame()
+
+        latest_date = latest_date_response.data[0]["Date"]
+
+        # Step 2: Fetch only records from that latest date
+        response = (
+            supabase.table(PRODUCTS_TABLE)
+            .select("*")
+            .eq("Date", latest_date)
+            .execute()
+        )
+        return pd.DataFrame(response.data)
+    except Exception as e:
+        return pd.DataFrame()
 
 # -------------------------------
 # Data Handling
@@ -549,7 +571,7 @@ def main():
         data = load_products_from_supabase()
 
     search_text = st.sidebar.text_input("Search", value="")
-    sort_by = st.sidebar.selectbox("Sort by", ['Sort by', '# of reviews', 'Rating', 'Top Veiwed - Year', 'Top Veiwed - Month', 'Top Seller - Year', 'Top Seller - Month'])
+    sort_by = st.sidebar.selectbox("Sort by", ['Sort by', '# of reviews', 'Rating', 'Top Viewed - Year', 'Top Viewed - Month', 'Top Seller - Year', 'Top Seller - Month'])
 
     # Create filter options from data
     food_items = load_food_items()
@@ -725,3 +747,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
