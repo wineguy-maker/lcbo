@@ -54,7 +54,7 @@ def supabase_delete_record(table_name, URI, user_id):
     except Exception as e:
         return None  # Remove st.error message
 
-def load_latest_products_from_supabase():
+def load_products_from_supabase():
     """Load only the most recent snapshot of products from Supabase."""
     try:
         # Step 1: Find the latest date in the Products table
@@ -747,4 +747,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
