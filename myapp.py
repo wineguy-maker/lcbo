@@ -492,9 +492,12 @@ def refresh_data(store_id=None):
                     }
                     supabase_upsert_record("Price History", price_history_data)
 
+        # Start a thread to update Supabase in the background
         threading.Thread(target=update_supabase, daemon=True).start()
-        threading.Thread(target=background_update(df_products, today_str), daemon=True).start()
 
+        # Start a thread to run background_update with arguments in the background
+        threading.Thread(target=background_update, args=(df_products, today_str), daemon=True).start()
+        
         st.success("Data loaded! Background updates are in progress.")  # Keep this message
         return df_products
     else:
@@ -747,5 +750,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
