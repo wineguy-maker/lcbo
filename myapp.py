@@ -333,14 +333,13 @@ def refresh_data(store_id=None):
         "aq": "@ec_visibility==(2,4) @cp_browsing_category_deny<>0 @ec_category==\"Products|Wine|Red Wine\" (@ec_rating==5..5 OR @ec_rating==4..4.9)"
     }
     if store_id:
-        dictionaryFieldContext = {
-            "stores_stock": "",
-            "stores_inventory": store_id,
-            "stores_stock_combined": store_id,
-            "stores_low_stock_combined": store_id
+        initial_payload["dictionaryFieldContext"] = {
+             "stores_stock": "",
+             "stores_inventory": store_id,
+             "stores_stock_combined": store_id,
+             "stores_low_stock_combined": store_id
         }
-        initial_payload.update(dictionaryFieldContext)
-
+        
     def get_items(payload):
         response = requests.post(url, headers=headers, json=payload)
         return response.json()
@@ -750,6 +749,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
