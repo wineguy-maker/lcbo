@@ -371,7 +371,12 @@ def refresh_data(store_id=None):
                 "aq": "@ec_visibility==(2,4) @cp_browsing_category_deny<>0 @ec_category==\"Products|Wine|Red Wine\" (@ec_rating==5..5 OR @ec_rating==4..4.9)"
             }
             if store_id:
-                payload.update(dictionaryFieldContext)
+               payload["dictionaryFieldContext"] = {
+               "stores_stock": "",
+               "stores_inventory": store_id,
+               "stores_stock_combined": store_id,
+               "stores_low_stock_combined": store_id
+               }
             data = get_items(payload)
             if 'results' in data:
                 all_items.extend(data['results'])
@@ -749,6 +754,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
